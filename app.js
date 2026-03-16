@@ -117,14 +117,16 @@ function judgeFinalAnswer(text){
 }
 
 function maybeGiveHint() {
-  if (state.wrongStreak < 3) return;
+  if (state.wrongStreak < 3) return false;
   state.wrongStreak = 0;
   const hints = state.current.hints || [];
-  const hint = hints[Math.min(state.hintLevel, hints.length - 1)] || '提示：回到题面，抓住最反常的细节。';
+  const idx = Math.min(state.hintLevel, Math.max(0, hints.length - 1));
+  const hint = hints[idx] || '回到题面，抓住最反常的细节。';
   state.hintLevel += 1;
   addLog('主持人', `💡 提示：${hint}`);
   el.feedback.style.color = '#8bd3dd';
   el.feedback.textContent = `💡 提示：${hint}`;
+  return true;
 }
 
 function submitGuess(){
@@ -155,12 +157,12 @@ function submitGuess(){
     addLog('主持人','是');
   }else if(result==='no'){
     playWrong(); shake(); state.wrongStreak += 1;
-    el.feedback.style.color='var(--bad)'; el.feedback.textContent='主持人回答：不是';
+    el.feedback.style.color='var(--bad)'; el.feedback.textContent=`主持人回答：不是（偏离累计 ${state.wrongStreak}/3）`;
     addLog('主持人','不是');
     maybeGiveHint();
   }else{
     playIrrelevant(); state.wrongStreak += 1;
-    el.feedback.style.color='#ffd38a'; el.feedback.textContent='主持人回答：无关';
+    el.feedback.style.color='#ffd38a'; el.feedback.textContent=`主持人回答：无关（偏离累计 ${state.wrongStreak}/3）`;
     addLog('主持人','无关');
     maybeGiveHint();
   }
