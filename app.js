@@ -4,6 +4,7 @@ const puzzles = [
     story: '一个人每天坐电梯上班，某天看到电梯里有血迹，却松了口气。为什么？',
     solution: '他是盲人，依赖导盲犬。看到血迹说明受伤的是狗而不是自己或家人，所以先松了口气。',
     answerKeywords: ['盲人', '导盲犬', '狗', '受伤'],
+    hints: ['和“人的视觉状态”有关。', '关注受伤对象是谁，不是人。'],
     yes: ['狗', '导盲犬', '受伤', '血', '盲'],
     no: ['杀人', '电梯故障', '自残', '抢劫']
   },
@@ -12,6 +13,7 @@ const puzzles = [
     story: '海滩上只有一串向海里走去的脚印，却没人回来。后来人却平安无事。',
     solution: '那个人是倒着走进海里的，离开时顺着原路倒退回来，所以看起来像只有走向海里的脚印。',
     answerKeywords: ['倒着走', '后退', '脚印方向'],
+    hints: ['关键在“脚印方向”和“走路方向”不是一回事。', '想想人能不能倒着移动。'],
     yes: ['脚印', '方向', '倒着', '后退'],
     no: ['溺水', '被海浪卷走', '失踪', '谋杀']
   },
@@ -20,6 +22,7 @@ const puzzles = [
     story: '他半夜接了一个电话，听完后立刻睡得更香了。为什么？',
     solution: '电话是打错的，他因此确认真正要担心的事没有发生，于是安心睡了。',
     answerKeywords: ['打错', '误拨', '确认', '没事'],
+    hints: ['这通电话不是他本来要等的那通。', '“打错电话”本身就是线索。'],
     yes: ['打错', '误会', '确认', '没事'],
     no: ['中奖', '求救', '表白', '报警']
   }
@@ -45,7 +48,7 @@ const el = {
   chatLog: document.getElementById('chatLog')
 };
 
-let state = { player: '', round: 0, attempts: 0, current: null, done: false, lastPuzzleIndex: -1 };
+let state = { player: '', round: 0, attempts: 0, current: null, done: false, lastPuzzleIndex: -1, wrongStreak: 0, hintLevel: 0 };
 
 const AudioCtx = window.AudioContext || window.webkitAudioContext;
 const audioCtx = new AudioCtx();
@@ -91,7 +94,7 @@ function addLog(role, text){
 
 function startGame(){
   const name = el.playerName.value.trim(); if(!name) return alert('请先输入玩家姓名');
-  state.player=name; state.round+=1; state.attempts=0; state.current=pickPuzzle(); state.done=false;
+  state.player=name; state.round+=1; state.attempts=0; state.current=pickPuzzle(); state.done=false; state.wrongStreak=0; state.hintLevel=0;
   el.startPanel.classList.add('hidden'); el.gamePanel.classList.remove('hidden'); el.replayBox.classList.add('hidden');
   el.roundTitle.textContent=`第 ${state.round} 局：${state.current.title}`;
   el.playerBadge.textContent=`玩家：${state.player}`; el.storyText.textContent=state.current.story;
@@ -113,6 +116,17 @@ function judgeFinalAnswer(text){
   return hit>=1;
 }
 
+function maybeGiveHint() {
+  if (state.wrongStreak < 3) return;
+  state.wrongStreak = 0;
+  const hints = state.current.hints || [];
+  const hint = hints[Math.min(state.hintLevel, hints.length - 1)] || '提示：回到题面，抓住最反常的细节。';
+  state.hintLevel += 1;
+  addLog('主持人', `💡 提示：${hint}`);
+  el.feedback.style.color = '#8bd3dd';
+  el.feedback.textContent = `💡 提示：${hint}`;
+}
+
 function submitGuess(){
   if(state.done) return;
   const input=el.guessInput.value.trim(); if(!input) return;
@@ -120,31 +134,35 @@ function submitGuess(){
 
   if(isFinalGuess(input)){
     if(judgeFinalAnswer(input)){
-      playCorrect(); confettiBurst(); state.done=true;
+      playCorrect(); confettiBurst(); state.done=true; state.wrongStreak = 0;
       el.feedback.style.color='var(--ok)'; el.feedback.textContent=`🎉 猜对了！你用了 ${state.attempts} 次。`;
       el.hostText.textContent=`最威主持人：恭喜 ${state.player} 通关！`;
       addLog('主持人', `回答正确！真相：${state.current.solution}`);
       updateRank(state.player,true,state.attempts); el.replayBox.classList.remove('hidden');
     }else{
-      playWrong(); shake();
+      playWrong(); shake(); state.wrongStreak += 1;
       el.feedback.style.color='var(--bad)'; el.feedback.textContent='还没命中真相，可以继续提问或再次“我猜：...”';
       addLog('主持人', '不是（最终答案未命中关键点）。');
+      maybeGiveHint();
     }
     return;
   }
 
   const result=classifyQuestion(input);
   if(result==='yes'){
+    state.wrongStreak = 0;
     el.feedback.style.color='var(--ok)'; el.feedback.textContent='主持人回答：是';
     addLog('主持人','是');
   }else if(result==='no'){
-    playWrong(); shake();
+    playWrong(); shake(); state.wrongStreak += 1;
     el.feedback.style.color='var(--bad)'; el.feedback.textContent='主持人回答：不是';
     addLog('主持人','不是');
+    maybeGiveHint();
   }else{
-    playIrrelevant();
+    playIrrelevant(); state.wrongStreak += 1;
     el.feedback.style.color='#ffd38a'; el.feedback.textContent='主持人回答：无关';
     addLog('主持人','无关');
+    maybeGiveHint();
   }
 }
 
