@@ -72,9 +72,6 @@ function playIrrelevant() {
   tone(240, 0.12, 'sine', 0.09);
   setTimeout(() => tone(190, 0.18, 'sine', 0.08), 110);
 }
-function playStartJingle() {
-  [392, 494, 587].forEach((f, i) => setTimeout(() => tone(f, 0.1, 'square', 0.05), i * 120));
-}
 
 function shake() {
   document.body.classList.remove('shake');
@@ -163,7 +160,7 @@ function startGame() {
   el.hostText.textContent = '最威主持人：开猜！你可以问细节，也可以直接猜答案。';
   el.feedback.textContent = '';
   el.guessInput.value = '';
-  playStartJingle();
+  // 开局不自动持续发声，避免打扰
 }
 
 function judgeGuess(text) {
