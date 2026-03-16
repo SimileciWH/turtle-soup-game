@@ -49,7 +49,6 @@ let state = {
 
 const AudioCtx = window.AudioContext || window.webkitAudioContext;
 const audioCtx = new AudioCtx();
-let bgmTimer = null;
 
 function tone(freq, dur = 0.2, type = 'sine', volume = 0.08) {
   const osc = audioCtx.createOscillator();
@@ -73,14 +72,8 @@ function playIrrelevant() {
   tone(240, 0.12, 'sine', 0.09);
   setTimeout(() => tone(190, 0.18, 'sine', 0.08), 110);
 }
-function startBgm() {
-  if (bgmTimer) return;
-  const seq = [392, 494, 587, 494];
-  let i = 0;
-  bgmTimer = setInterval(() => {
-    tone(seq[i % seq.length], 0.12, 'square', 0.035);
-    i += 1;
-  }, 260);
+function playStartJingle() {
+  [392, 494, 587].forEach((f, i) => setTimeout(() => tone(f, 0.1, 'square', 0.05), i * 120));
 }
 
 function shake() {
@@ -170,7 +163,7 @@ function startGame() {
   el.hostText.textContent = '最威主持人：开猜！你可以问细节，也可以直接猜答案。';
   el.feedback.textContent = '';
   el.guessInput.value = '';
-  startBgm();
+  playStartJingle();
 }
 
 function judgeGuess(text) {
