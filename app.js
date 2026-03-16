@@ -43,7 +43,8 @@ let state = {
   round: 0,
   attempts: 0,
   current: null,
-  done: false
+  done: false,
+  lastPuzzleIndex: -1
 };
 
 const AudioCtx = window.AudioContext || window.webkitAudioContext;
@@ -139,7 +140,16 @@ function renderRank() {
 }
 
 function pickPuzzle() {
-  return puzzles[Math.floor(Math.random() * puzzles.length)];
+  if (puzzles.length === 1) {
+    state.lastPuzzleIndex = 0;
+    return puzzles[0];
+  }
+  let idx = Math.floor(Math.random() * puzzles.length);
+  if (idx === state.lastPuzzleIndex) {
+    idx = (idx + 1 + Math.floor(Math.random() * (puzzles.length - 1))) % puzzles.length;
+  }
+  state.lastPuzzleIndex = idx;
+  return puzzles[idx];
 }
 
 function startGame() {
