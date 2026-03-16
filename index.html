@@ -26,14 +26,15 @@
         <span id="playerBadge"></span>
       </div>
       <p class="story" id="storyText"></p>
-      <p class="host" id="hostText">最威主持人：来吧，问我问题，猜真相！</p>
+      <p class="host" id="hostText">最威主持人：先提问，我只会回答「是/不是/无关」。要提交最终答案请用“我猜：xxx”。</p>
 
       <div class="guess-box">
-        <input id="guessInput" placeholder="输入你的猜测..." />
-        <button id="guessBtn" class="btn">提交猜测</button>
+        <input id="guessInput" placeholder="输入问题，或“我猜：你的答案”" />
+        <button id="guessBtn" class="btn">发送</button>
       </div>
 
       <div class="feedback" id="feedback"></div>
+      <div id="chatLog" class="story" style="min-height:120px"></div>
 
       <div class="row between replay hidden" id="replayBox">
         <span>再开一局？</span>
@@ -49,6 +50,6 @@
       <ol id="rankList"></ol>
     </section>
   </main>
-  <script src="app.js?v=20260317-1"></script>
+  <script src="app.js?v=20260317-2"></script>
 </body>
 </html>
