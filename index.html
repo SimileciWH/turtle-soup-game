@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>海龟汤像素馆</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <canvas id="confetti"></canvas>
+  <main class="app">
+    <header class="panel title-panel">
+      <h1>🧩 海龟汤像素馆</h1>
+      <p>欢迎来到最威主持人的谜题现场！</p>
+    </header>
+
+    <section class="panel start-panel" id="startPanel">
+      <label for="playerName">玩家姓名</label>
+      <input id="playerName" maxlength="20" placeholder="输入你的名字" />
+      <button id="startBtn" class="btn">开始游戏</button>
+    </section>
+
+    <section class="panel game-panel hidden" id="gamePanel">
+      <div class="row between">
+        <h2 id="roundTitle">第 1 局</h2>
+        <span id="playerBadge"></span>
+      </div>
+      <p class="story" id="storyText"></p>
+      <p class="host" id="hostText">最威主持人：来吧，问我问题，猜真相！</p>
+
+      <div class="guess-box">
+        <input id="guessInput" placeholder="输入你的猜测..." />
+        <button id="guessBtn" class="btn">提交猜测</button>
+      </div>
+
+      <div class="feedback" id="feedback"></div>
+
+      <div class="row between replay hidden" id="replayBox">
+        <span>再开一局？</span>
+        <div>
+          <button id="replayYes" class="btn">来！</button>
+          <button id="replayNo" class="btn ghost">先不了</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel rank-panel">
+      <h3>🏆 排行榜</h3>
+      <ol id="rankList"></ol>
+    </section>
+  </main>
+  <script src="app.js"></script>
+</body>
+</html>
