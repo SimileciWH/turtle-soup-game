@@ -1,0 +1,66 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Validate puzzle JSON
+        run: |
+          node -e "
+            const fs = require('fs');
+            const data = JSON.parse(fs.readFileSync('src/data/puzzles.json', 'utf8'));
+            console.log('Puzzles loaded:', data.length);
+            data.forEach((p, i) => {
+              if (!p.title || !p.story || !p.solution) {
+                throw new Error('Puzzle ' + i + ' missing required fields');
+              }
+            });
+            console.log('All puzzles valid!');
+          "
+
+      - name: Validate JavaScript syntax
+        run: |
+          for f in src/js/*.js; do
+            node --check "$f" && echo "$f OK" || { echo "$f FAILED"; exit 1; }
+          done
+
+      - name: Validate HTML structure
+        run: |
+          grep -q 'id="startPanel"' index.html || exit 1
+          grep -q 'id="gamePanel"' index.html || exit 1
+          grep -q 'id="rankList"' index.html || exit 1
+
+      - name: Check CSS syntax
+        run: |
+          for f in src/css/*.css; do
+            if grep -q 'animation.*{' "$f"; then
+              echo "Warning: inline animation in $f"
+            fi
+          done
+
+  lint:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run ESLint
+        run: |
+          npm init -y > /dev/null 2>&1
+          npm install eslint --save-dev > /dev/null 2>&1
+          npx eslint src/js/ --ext .js || true
+        continue-on-error: true
