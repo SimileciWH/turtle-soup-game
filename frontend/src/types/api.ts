@@ -46,6 +46,8 @@ export interface ResultResponse {
   status: 'WON' | 'GIVEN_UP'
   puzzle_id: number
   puzzle_title: string
+  surface: string
+  full_answer: string
   question_count: number
   hint_used: number
   duration_sec: number | null

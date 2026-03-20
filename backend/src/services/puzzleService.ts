@@ -62,6 +62,18 @@ export async function getPuzzleById(id: number): Promise<SafePuzzle> {
   return puzzle
 }
 
+// 仅供结果页：游戏结束后揭晓汤底，不要求 ACTIVE 状态
+export async function getPuzzleWithAnswer(
+  id: number
+): Promise<{ title: string; surface: string; answer: string }> {
+  const puzzle = await prisma.puzzle.findUnique({
+    where: { id },
+    select: { title: true, surface: true, answer: true }
+  })
+  if (!puzzle) throw Errors.NOT_FOUND('题目不存在')
+  return puzzle
+}
+
 // 仅供游戏引擎内部调用，包含汤底
 export async function getFullPuzzle(id: number): Promise<FullPuzzle> {
   const puzzle = await prisma.puzzle.findUnique({

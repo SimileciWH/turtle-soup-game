@@ -185,13 +185,15 @@ export async function handleResult(req: Request, res: Response): Promise<void> {
   const session = await gameService.getSessionById(sessionId, user.id)
   if (session.status === 'ACTIVE') throw Errors.SESSION_NOT_ACTIVE()
 
-  const puzzle = await puzzleService.getPuzzleById(session.puzzleId)
+  const puzzle = await puzzleService.getPuzzleWithAnswer(session.puzzleId)
 
   res.json({
     session_id: session.id.toString(),
     status: session.status,
     puzzle_id: session.puzzleId,
     puzzle_title: puzzle.title,
+    surface: puzzle.surface,
+    full_answer: puzzle.answer,
     question_count: session.questionCount,
     hint_used: session.hintUsed,
     duration_sec: session.durationSec,

@@ -36,13 +36,13 @@ export function Result() {
       await navigator.clipboard.writeText(text)
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
-    } catch {
-      // fallback: nothing
-    }
+    } catch { /* fallback: nothing */ }
   }
 
   if (loading) return (
-    <div className="min-h-screen bg-warm-white flex items-center justify-center text-warm-mid">加载中…</div>
+    <div className="min-h-screen bg-warm-white flex items-center justify-center text-warm-mid">
+      加载中…
+    </div>
   )
 
   if (error || !result) return (
@@ -67,7 +67,30 @@ export function Result() {
         </div>
       </header>
 
-      <main className="flex-1 max-w-lg mx-auto w-full px-4 py-6 flex flex-col gap-6">
+      <main className="flex-1 max-w-lg mx-auto w-full px-4 py-6 flex flex-col gap-5">
+
+        {/* ── 汤底揭晓（核心内容）── */}
+        <div className="bg-white/80 rounded-2xl border border-sand/40 overflow-hidden">
+          {/* Surface */}
+          <div className="px-5 pt-5 pb-3">
+            <div className="text-xs font-medium text-warm-mid mb-1.5 uppercase tracking-wide">汤面</div>
+            <p className="text-sm text-warm-brown leading-relaxed">{result.surface}</p>
+          </div>
+
+          <div className="mx-5 border-t border-sand/40" />
+
+          {/* Full answer */}
+          <div className="px-5 pt-3 pb-5">
+            <div className="flex items-center gap-1.5 mb-2">
+              <span className="text-xs font-medium text-warm-mid uppercase tracking-wide">汤底真相</span>
+              {won && <span className="text-xs bg-leaf/20 text-leaf px-1.5 py-0.5 rounded-full">你猜对了！</span>}
+            </div>
+            <p className="text-sm text-warm-brown leading-relaxed whitespace-pre-wrap">
+              {result.full_answer}
+            </p>
+          </div>
+        </div>
+
         {/* Share card */}
         <ShareCard
           puzzleTitle={result.puzzle_title}
@@ -93,7 +116,7 @@ export function Result() {
           </button>
         </div>
 
-        {/* Stats detail */}
+        {/* Stats */}
         <div className="bg-white/60 rounded-2xl border border-sand/40 p-4">
           <h3 className="font-bold text-warm-brown mb-3 text-sm">本局统计</h3>
           <dl className="grid grid-cols-2 gap-y-2 text-sm">
@@ -107,7 +130,7 @@ export function Result() {
             <dd className="text-warm-brown">{result.question_count} 问</dd>
             <dt className="text-warm-mid">提示使用</dt>
             <dd className="text-warm-brown">{result.hint_used} / 3</dd>
-            {result.duration_sec && (
+            {result.duration_sec != null && (
               <>
                 <dt className="text-warm-mid">用时</dt>
                 <dd className="text-warm-brown">{formatDuration(result.duration_sec)}</dd>
