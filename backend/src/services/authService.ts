@@ -98,3 +98,12 @@ export function signJwt(userId: bigint): string {
 export async function getUserById(id: bigint): Promise<User | null> {
   return prisma.user.findUnique({ where: { id } })
 }
+
+export async function getUserByEmail(email: string): Promise<User | null> {
+  return prisma.user.findUnique({ where: { email } })
+}
+
+// 开发专用：直接按邮箱创建用户，无需 OTP
+export async function createUserByEmail(email: string): Promise<User> {
+  return prisma.user.create({ data: { email } })
+}

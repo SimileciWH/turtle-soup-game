@@ -1,10 +1,12 @@
 import { Router } from 'express'
+import asyncHandler from 'express-async-handler'
+import { authMiddleware } from '../middlewares/auth'
+import * as ctrl from '../controllers/redeemController'
 
 const router = Router()
 
-// POST /redeem — 兑换码激活
-router.post('/', (_req, res) => {
-  res.status(501).json({ error: 'NOT_IMPLEMENTED', message: '待实现' })
-})
+router.use(authMiddleware)
+
+router.post('/', asyncHandler(ctrl.handleRedeem))
 
 export default router

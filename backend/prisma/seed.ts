@@ -70,6 +70,12 @@ const puzzles = [
   }
 ]
 
+const testRedeemCodes = [
+  { code: 'TEST-0001', quotaValue: 10 },
+  { code: 'TEST-0030', quotaValue: 30 },
+  { code: 'TEST-0100', quotaValue: 100 }
+]
+
 async function main(): Promise<void> {
   console.log('开始填充题目数据...')
 
@@ -82,7 +88,17 @@ async function main(): Promise<void> {
     console.log(`  ✓ ${p.title}`)
   }
 
-  console.log(`完成，共填充 ${puzzles.length} 道题目。`)
+  console.log('填充测试兑换码...')
+  for (const c of testRedeemCodes) {
+    await prisma.redeemCode.upsert({
+      where: { code: c.code },
+      update: {},
+      create: c
+    })
+    console.log(`  ✓ ${c.code}（${c.quotaValue} 局）`)
+  }
+
+  console.log(`完成，共填充 ${puzzles.length} 道题目 + ${testRedeemCodes.length} 个测试兑换码。`)
 }
 
 main()

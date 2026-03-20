@@ -50,6 +50,20 @@ export async function handleMe(req: Request, res: Response): Promise<void> {
   res.json(formatUser(user, false))
 }
 
+// 开发环境专用：绕过 OTP，直接用邮箱创建/获取账号并返回 JWT
+export async function handleDevLogin(req: Request, res: Response): Promise<void> {
+  const { email } = req.body as { email?: string }
+  if (!email) throw Errors.INVALID_INPUT('缺少 email')
+
+  // 确保邮箱用户存在，否则创建
+  let user = await authService.getUserByEmail(email)
+  if (!user) {
+    user = await authService.createUserByEmail(email)
+  }
+  const token = authService.signJwt(user.id)
+  res.json({ token })
+}
+
 function formatUser(
   user: { email: string | null; quotaFree: number; quotaPaid: number },
   isGuest: boolean
