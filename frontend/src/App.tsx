@@ -3,6 +3,7 @@ import { Lobby } from './pages/Lobby'
 import { Auth } from './pages/Auth'
 import { Game } from './pages/Game'
 import { Result } from './pages/Result'
+import { Profile } from './pages/Profile'
 
 function App(): JSX.Element {
   return (
@@ -11,7 +12,7 @@ function App(): JSX.Element {
       <Route path="/auth" element={<Auth />} />
       <Route path="/game/:id" element={<Game />} />
       <Route path="/result/:id" element={<Result />} />
-      <Route path="/profile" element={<div className="p-8 text-center text-warm-mid">个人中心 — 待实现</div>} />
+      <Route path="/profile" element={<Profile />} />
     </Routes>
   )
 }
