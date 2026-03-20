@@ -13,7 +13,16 @@ import { errorHandler } from './middlewares/errorHandler'
 const app = express()
 
 app.use(helmet())
-app.use(cors({ origin: process.env['CORS_ORIGIN'] ?? 'http://localhost:3000' }))
+
+// 开发环境允许所有 localhost 端口（生产环境限定 CORS_ORIGIN）
+const corsOrigin = process.env['NODE_ENV'] === 'development'
+  ? (origin: string | undefined, cb: (e: Error | null, allow?: boolean) => void) => {
+      if (!origin || origin.startsWith('http://localhost')) cb(null, true)
+      else cb(new Error('Not allowed by CORS'))
+    }
+  : (process.env['CORS_ORIGIN'] ?? 'http://localhost:3000')
+
+app.use(cors({ origin: corsOrigin }))
 app.use(express.json())
 
 app.get('/api/health', (_req, res) => {
