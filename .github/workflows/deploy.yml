@@ -1,36 +1,12 @@
-name: Deploy to GitHub Pages
+# 部署由 Railway 自动处理（push to main 触发）
+# 详见 backend/railway.toml 和 frontend/railway.toml
+name: Deploy (disabled - using Railway)
 
 on:
-  push:
-    branches: [main]
-
-permissions:
-  contents: read
-  pages: write
-  id-token: write
-
-concurrency:
-  group: "pages"
-  cancel-in-progress: false
+  workflow_dispatch:  # 仅手动触发，禁止自动运行
 
 jobs:
-  deploy:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page }}
+  placeholder:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Pages
-        uses: actions/configure-pages@v4
-
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: '.'
-
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+      - run: echo "Deployment handled by Railway Git integration"
