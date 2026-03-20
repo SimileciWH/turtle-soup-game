@@ -1,11 +1,11 @@
 import type { Request, Response, NextFunction } from 'express'
 import jwt from 'jsonwebtoken'
-import { config } from '../config/index'
 import { Errors } from '../utils/AppError'
 
 export interface AuthPayload {
-  sub: number
+  sub: string
   type: 'user' | 'guest'
+  guestToken?: string
 }
 
 declare global {
@@ -23,15 +23,15 @@ export function authMiddleware(req: Request, _res: Response, next: NextFunction)
   const token = header.replace(/^Bearer\s+/, '')
 
   if (token.startsWith('g_')) {
-    req.user = { sub: 0, type: 'guest' }
-    ;(req.user as AuthPayload & { guestToken: string }).guestToken = token as unknown as string
+    req.user = { sub: '0', type: 'guest', guestToken: token }
     next()
     return
   }
 
   try {
-    const payload = jwt.verify(token, config.jwtSecret) as unknown as AuthPayload
-    req.user = payload
+    const secret = process.env['JWT_SECRET'] ?? ''
+    const payload = jwt.verify(token, secret) as unknown as AuthPayload
+    req.user = { sub: payload.sub, type: 'user' }
     next()
   } catch {
     throw Errors.UNAUTHORIZED()
