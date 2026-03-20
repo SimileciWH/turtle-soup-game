@@ -1,4 +1,8 @@
-import 'dotenv/config'
+import path from 'path'
+import dotenv from 'dotenv'
+
+// 从项目根目录加载 .env（运行命令时 cwd 为 backend/）
+dotenv.config({ path: path.resolve(process.cwd(), '../.env') })
 
 function requireEnv(key: string): string {
   const value = process.env[key]

@@ -1,4 +1,4 @@
-import 'dotenv/config'
+import './config/index' // 加载 .env，必须最先导入
 import express from 'express'
 import cors from 'cors'
 import helmet from 'helmet'
