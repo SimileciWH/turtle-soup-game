@@ -1,20 +1,11 @@
 import { Router } from 'express'
+import asyncHandler from 'express-async-handler'
+import * as ctrl from '../controllers/puzzleController'
 
 const router = Router()
 
-// GET /puzzles — 题目列表
-router.get('/', (_req, res) => {
-  res.status(501).json({ error: 'NOT_IMPLEMENTED', message: '待实现' })
-})
-
-// GET /puzzles/daily — 今日推荐题
-router.get('/daily', (_req, res) => {
-  res.status(501).json({ error: 'NOT_IMPLEMENTED', message: '待实现' })
-})
-
-// GET /puzzles/:id — 单题信息（不含 answer/facts）
-router.get('/:id', (_req, res) => {
-  res.status(501).json({ error: 'NOT_IMPLEMENTED', message: '待实现' })
-})
+router.get('/', asyncHandler(ctrl.handleList))
+router.get('/daily', asyncHandler(ctrl.handleDaily))
+router.get('/:id', asyncHandler(ctrl.handleGetOne))
 
 export default router

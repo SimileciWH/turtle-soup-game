@@ -25,7 +25,7 @@ model User {
 
 model Puzzle {
   id          Int           @id @default(autoincrement())
-  title       String        @db.VarChar(100)
+  title       String        @unique @db.VarChar(100)
   summary     String        @db.VarChar(200)
   surface     String        @db.Text
   answer      String        @db.Text
