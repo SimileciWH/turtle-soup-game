@@ -44,3 +44,7 @@ e2e/playwright-report/
 
 # Validation screenshots (large binary files)
 validation/
+
+# Claude Code & MCP tooling
+.claude/
+.playwright-mcp/

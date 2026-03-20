@@ -23,46 +23,62 @@ npx serve .
 python3 -m http.server 8000
 ```
 
-## Project Structure
+## Module Architecture & Data Flow
 
 ```
-src/
-├── js/
-│   ├── main.js       # Entry point, event binding
-│   ├── game.js       # Game state + flow control
-│   ├── classifier.js # Question classification + answer judgment
-│   ├── hint.js       # Hint system
-│   ├── dom.js        # DOM element references
-│   ├── render.js     # UI rendering functions
-│   ├── sound.js      # Web Audio sound effects
-│   └── rank.js       # Leaderboard localStorage
-├── css/
-│   ├── variables.css # CSS custom properties
-│   ├── base.css     # Base styles
-│   └── scene.css    # Pixel art background animation
-└── data/
-    └── puzzles.json  # Puzzle data
+main.js  →  loads puzzles.json → setPuzzles(game.js)
+         →  binds DOM events → calls game.js functions
+
+game.js  →  holds game state (player, round, attempts, wrongStreak, hintLevel)
+         →  on submitGuess: classifier.js determines yes/no/irrelevant
+         →  on final guess ("我猜：xxx"): classifier.judgeFinalAnswer checks answerKeywords
+         →  on wrong streak ≥ 3: hint.js.maybeGiveHint fires, resets wrongStreak
+         →  on win: rank.js.updateRank persists to localStorage
+
+classifier.js → keyword matching only (no AI):
+  - classifyQuestion: checks puzzle.yes[] / puzzle.no[] keyword arrays
+  - judgeFinalAnswer: strips "我猜：" prefix, checks puzzle.answerKeywords[]
+  - isFinalGuess: regex /^\s*(我猜|答案|guess)\s*[:：]/i
 ```
+
+## Puzzle JSON Schema
+
+Each entry in `src/data/puzzles.json` must have:
+
+```json
+{
+  "title": "谜题标题",
+  "story": "玩家看到的故事描述",
+  "solution": "完整真相说明",
+  "yes": ["keyword1", "keyword2"],         // question triggers "是" response
+  "no": ["keyword3", "keyword4"],          // question triggers "不是" response
+  "answerKeywords": ["key1", "key2"],      // final guess match (≥1 hit = win)
+  "hints": ["提示1", "提示2"]              // optional; auto-given after 3 wrong streak
+}
+```
+
+CI validates that `title`, `story`, `solution` are present for every puzzle.
 
 ## CI/CD
 
-- **CI**: `.github/workflows/ci.yml` - Validates JSON, JS syntax, HTML structure
+- **CI**: `.github/workflows/ci.yml` - Validates JSON schema, JS syntax (`node --check`), HTML panel IDs
 - **CD**: `.github/workflows/deploy.yml` - Auto-deploys to GitHub Pages on push to main
+- ESLint runs with `continue-on-error: true` (non-blocking)
 
-## Key Features
+## Project Tracking
 
-1. **Game Flow**: Player enters name → receives puzzle story → asks yes/no questions → guesses final answer with "我猜：xxx"
-2. **Ranking System**: Stored in localStorage (`turtleSoupRank`), sorted by wins then best attempts
-3. **Hint System**: Auto-triggers after 3 consecutive wrong/irrelevant responses
-4. **Audio**: Web Audio API generates tones (correct/wrong/irrelevant feedback)
-5. **Animations**: Pixel art turtle walking, confetti burst on win, shake on wrong answer
+- **Bugs**: `issues/issue_tracking.md` — prepend new entries; mark fixed ones inline
+- **Features**: `docs/feature_dev_list.md` — prepend new entries with detailed steps; update status on completion/pause/cancel
+- **Tests**: `tests/` folder — one test case per bug fix; added to CI before merge
+- **Screenshots**: `validation/MMDDHHММ/` — new folder per validation run
 
 ## Development Notes
 
 - CSS uses "Press Start 2P" pixel font (Google Fonts)
 - Pixel art scene created with pure CSS (no images)
 - Mobile responsive with breakpoint at 680px
-- Puzzle data loaded via fetch from JSON file
+- Puzzle data loaded via `fetch('./src/data/puzzles.json')` — requires HTTP server (not `file://`)
+- localStorage key: `turtleSoupRank` — array of `{name, wins, bestAttempts}`
 
 ## gstack
 
