@@ -1,21 +1,25 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { ShareCard } from '../components/result/ShareCard'
-import { getResult } from '../api/games'
+import { getResult, getMessages } from '../api/games'
 import type { ResultResponse } from '../types/api'
+
+type Message = { role: string; content: string }
 
 export function Result() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const [result, setResult] = useState<ResultResponse | null>(null)
+  const [messages, setMessages] = useState<Message[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
+  const [showHistory, setShowHistory] = useState(false)
 
   useEffect(() => {
     if (!id) return
-    getResult(id)
-      .then(setResult)
+    Promise.all([getResult(id), getMessages(id)])
+      .then(([res, msgRes]) => { setResult(res); setMessages(msgRes.messages) })
       .catch(e => setError(e instanceof Error ? e.message : '加载失败'))
       .finally(() => setLoading(false))
   }, [id])
@@ -138,6 +142,36 @@ export function Result() {
             )}
           </dl>
         </div>
+
+        {/* Conversation history */}
+        {messages.length > 0 && (
+          <div className="bg-white/60 rounded-2xl border border-sand/40 overflow-hidden">
+            <button
+              onClick={() => setShowHistory(h => !h)}
+              className="w-full flex items-center justify-between px-4 py-3 text-sm
+                         font-bold text-warm-brown hover:bg-sand/10 transition-colors"
+            >
+              <span>💬 对话记录（{messages.length} 条）</span>
+              <span className="text-warm-mid text-xs">{showHistory ? '▲ 收起' : '▼ 展开'}</span>
+            </button>
+            {showHistory && (
+              <div className="px-4 pb-4 flex flex-col gap-2 max-h-96 overflow-y-auto">
+                {messages.map((m, i) => (
+                  <div
+                    key={i}
+                    className={`text-xs rounded-xl px-3 py-2 leading-relaxed ${
+                      m.role === 'USER'
+                        ? 'bg-sky/20 text-ocean self-end max-w-[85%] text-right'
+                        : 'bg-sand/20 text-warm-brown self-start max-w-[85%]'
+                    }`}
+                  >
+                    {m.content}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
       </main>
     </div>
   )

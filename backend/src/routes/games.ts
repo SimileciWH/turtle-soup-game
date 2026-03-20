@@ -16,6 +16,7 @@ router.post('/:id/ask', askRateLimit, inputGuard, asyncHandler(ctrl.handleAsk))
 router.post('/:id/hint', asyncHandler(ctrl.handleHint))
 router.post('/:id/answer', asyncHandler(ctrl.handleAnswer))
 router.post('/:id/giveup', asyncHandler(ctrl.handleGiveUp))
+router.get('/:id/messages', asyncHandler(ctrl.handleGetMessages))
 router.get('/:id/result', asyncHandler(ctrl.handleResult))
 
 export default router

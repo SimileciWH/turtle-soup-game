@@ -1,4 +1,4 @@
-import { api } from './client'
+import { api, BASE_URL } from './client'
 import type { StartGameResponse, SessionResponse, ResultResponse } from '../types/api'
 
 export type SseDelta = { type: 'delta'; content: string }
@@ -12,7 +12,7 @@ export async function* askStream(
 ): AsyncGenerator<SseEvent> {
   const token =
     localStorage.getItem('hgt_token') ?? localStorage.getItem('hgt_guest_token')
-  const res = await fetch(`/api/v1/games/${sessionId}/ask`, {
+  const res = await fetch(`${BASE_URL}/games/${sessionId}/ask`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -71,4 +71,10 @@ export function submitAnswer(sessionId: string, answer: string) {
 
 export function getHint(sessionId: string) {
   return api.post<{ hint: string }>(`/games/${sessionId}/hint`, {})
+}
+
+export function getMessages(sessionId: string) {
+  return api.get<{ messages: Array<{ role: string; content: string }> }>(
+    `/games/${sessionId}/messages`
+  )
 }

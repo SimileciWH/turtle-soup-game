@@ -175,6 +175,19 @@ export async function handleGiveUp(req: Request, res: Response): Promise<void> {
   res.json({ full_answer: puzzle.answer, message: '已放弃，汤底已揭晓。' })
 }
 
+// ── GET /games/:id/messages ───────────────────────────────
+
+export async function handleGetMessages(req: Request, res: Response): Promise<void> {
+  const auth = req.user!
+  const user = await quotaService.resolveUser(auth)
+  const sessionId = BigInt(String(req.params['id'] ?? '0'))
+
+  await gameService.getSessionById(sessionId, user.id) // ownership check
+  const messages = await gameService.getMessages(sessionId)
+
+  res.json({ messages: messages.map(m => ({ role: m.role, content: m.content })) })
+}
+
 // ── GET /games/:id/result ─────────────────────────────────
 
 export async function handleResult(req: Request, res: Response): Promise<void> {
