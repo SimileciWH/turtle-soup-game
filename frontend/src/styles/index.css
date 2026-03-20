@@ -1,0 +1,15 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    font-family: 'Noto Sans SC', sans-serif;
+    background-color: #FDF6E3;
+    color: #3D2B1A;
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+}

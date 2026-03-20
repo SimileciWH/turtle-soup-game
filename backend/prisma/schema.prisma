@@ -1,0 +1,115 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id             BigInt         @id @default(autoincrement())
+  email          String?        @unique
+  guestToken     String?        @unique @map("guest_token")
+  quotaFree      Int            @default(3) @map("quota_free")
+  quotaPaid      Int            @default(0) @map("quota_paid")
+  quotaResetAt   DateTime?      @map("quota_reset_at") @db.Date
+  createdAt      DateTime       @default(now()) @map("created_at")
+  updatedAt      DateTime       @updatedAt @map("updated_at")
+
+  sessions       GameSession[]
+  redeemCodes    RedeemCode[]   @relation("UsedBy")
+
+  @@map("users")
+}
+
+model Puzzle {
+  id          Int           @id @default(autoincrement())
+  title       String        @db.VarChar(100)
+  summary     String        @db.VarChar(200)
+  surface     String        @db.Text
+  answer      String        @db.Text
+  facts       Json
+  hint1       String        @map("hint_1") @db.Text
+  hint2       String        @map("hint_2") @db.Text
+  hint3       String        @map("hint_3") @db.Text
+  difficulty  Difficulty
+  tags        Json?
+  isDaily     Boolean       @default(false) @map("is_daily")
+  status      PuzzleStatus  @default(DRAFT)
+  playCount   Int           @default(0) @map("play_count")
+  createdAt   DateTime      @default(now()) @map("created_at")
+
+  sessions    GameSession[]
+
+  @@map("puzzles")
+}
+
+model GameSession {
+  id            BigInt          @id @default(autoincrement())
+  userId        BigInt          @map("user_id")
+  puzzleId      Int             @map("puzzle_id")
+  status        SessionStatus   @default(ACTIVE)
+  questionCount Int             @default(0) @map("question_count")
+  hintUsed      Int             @default(0) @map("hint_used")
+  startedAt     DateTime        @default(now()) @map("started_at")
+  endedAt       DateTime?       @map("ended_at")
+  durationSec   Int?            @map("duration_sec")
+
+  user          User            @relation(fields: [userId], references: [id])
+  puzzle        Puzzle          @relation(fields: [puzzleId], references: [id])
+  messages      GameMessage[]
+
+  @@map("game_sessions")
+}
+
+model GameMessage {
+  id         BigInt      @id @default(autoincrement())
+  sessionId  BigInt      @map("session_id")
+  role       MessageRole
+  content    String      @db.Text
+  seq        Int
+  createdAt  DateTime    @default(now()) @map("created_at")
+
+  session    GameSession @relation(fields: [sessionId], references: [id])
+
+  @@index([sessionId, seq], name: "idx_session")
+  @@map("game_messages")
+}
+
+model RedeemCode {
+  id          Int       @id @default(autoincrement())
+  code        String    @unique @db.VarChar(20)
+  quotaValue  Int       @map("quota_value")
+  usedById    BigInt?   @map("used_by")
+  usedAt      DateTime? @map("used_at")
+  expiresAt   DateTime? @map("expires_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  usedBy      User?     @relation("UsedBy", fields: [usedById], references: [id])
+
+  @@map("redeem_codes")
+}
+
+enum Difficulty {
+  EASY    @map("easy")
+  MEDIUM  @map("medium")
+  HARD    @map("hard")
+}
+
+enum PuzzleStatus {
+  DRAFT     @map("draft")
+  ACTIVE    @map("active")
+  INACTIVE  @map("inactive")
+}
+
+enum SessionStatus {
+  ACTIVE    @map("active")
+  WON       @map("won")
+  GIVEN_UP  @map("given_up")
+}
+
+enum MessageRole {
+  USER       @map("user")
+  ASSISTANT  @map("assistant")
+}

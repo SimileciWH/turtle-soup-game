@@ -1,0 +1,20 @@
+import 'dotenv/config'
+
+function requireEnv(key: string): string {
+  const value = process.env[key]
+  if (!value) throw new Error(`Missing required env var: ${key}`)
+  return value
+}
+
+export const config = {
+  port: parseInt(process.env['PORT'] ?? '4000', 10),
+  nodeEnv: process.env['NODE_ENV'] ?? 'development',
+  databaseUrl: requireEnv('DATABASE_URL'),
+  jwtSecret: requireEnv('JWT_SECRET'),
+  openai: {
+    baseUrl: requireEnv('OPENAI_BASE_URL'),
+    apiKey: requireEnv('OPENAI_API_KEY')
+  },
+  resendApiKey: requireEnv('RESEND_API_KEY'),
+  corsOrigin: process.env['CORS_ORIGIN'] ?? 'http://localhost:3000'
+} as const

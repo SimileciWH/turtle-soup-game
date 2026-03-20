@@ -1,0 +1,7 @@
+[build]
+  builder = "nixpacks"
+  buildCommand = "npm ci && npm run build && npm run db:generate"
+
+[deploy]
+  startCommand = "npm start"
+  healthcheckPath = "/api/health"
