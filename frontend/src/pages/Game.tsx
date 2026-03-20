@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useGameStore } from '../store/gameStore'
 import { GameHeader } from '../components/game/GameHeader'
@@ -13,9 +13,14 @@ export function Game() {
   const navigate = useNavigate()
   const store = useGameStore()
 
+  const surfaceRef = useRef<HTMLDivElement>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [answerInput, setAnswerInput] = useState<string | null>(null)
+
+  function handleViewSurface() {
+    surfaceRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
 
   // Load or restore session on mount
   useEffect(() => {
@@ -147,7 +152,7 @@ export function Game() {
 
       {/* Surface / story card */}
       {puzzle && (
-        <div className="max-w-2xl mx-auto w-full px-4 mt-4">
+        <div ref={surfaceRef} className="max-w-2xl mx-auto w-full px-4 mt-4 scroll-mt-16">
           <div className="bg-sky/20 border border-sky/60 rounded-2xl p-4 text-sm text-warm-brown leading-relaxed">
             <span className="font-semibold">📖 故事：</span>{puzzle.surface}
           </div>
@@ -183,6 +188,7 @@ export function Game() {
         <ActionBar
           hintUsed={store.hintUsed}
           disabled={isDisabled}
+          onViewSurface={handleViewSurface}
           onHint={handleHint}
           onAnswer={handleAnswerClick}
           onGiveUp={handleGiveUp}

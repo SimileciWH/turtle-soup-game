@@ -1,14 +1,24 @@
 interface ActionBarProps {
   hintUsed: number
   disabled: boolean
+  onViewSurface: () => void
   onHint: () => void
   onAnswer: () => void
   onGiveUp: () => void
 }
 
-export function ActionBar({ hintUsed, disabled, onHint, onAnswer, onGiveUp }: ActionBarProps) {
+export function ActionBar({
+  hintUsed, disabled, onViewSurface, onHint, onAnswer, onGiveUp
+}: ActionBarProps) {
   return (
     <div className="flex gap-2 px-3 pb-2 flex-wrap">
+      <button
+        onClick={onViewSurface}
+        className="flex-1 py-1.5 text-xs bg-sky/40 text-ocean rounded-lg
+                   hover:bg-sky/60 transition-colors"
+      >
+        📖 查看汤面
+      </button>
       <button
         onClick={onHint}
         disabled={disabled || hintUsed >= 3}
@@ -23,7 +33,7 @@ export function ActionBar({ hintUsed, disabled, onHint, onAnswer, onGiveUp }: Ac
         className="flex-1 py-1.5 text-xs bg-leaf/20 text-leaf rounded-lg
                    hover:bg-leaf/30 disabled:opacity-40 transition-colors"
       >
-        ✅ 提交答案
+        ✅ 说出答案
       </button>
       <button
         onClick={onGiveUp}
