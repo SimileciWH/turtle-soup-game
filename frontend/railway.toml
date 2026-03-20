@@ -1,0 +1,8 @@
+[build]
+  builder = "nixpacks"
+  buildCommand = "npm ci && npm run build"
+
+[deploy]
+  startCommand = "npx vite preview --port $PORT --host"
+  restartPolicyType = "ON_FAILURE"
+  restartPolicyMaxRetries = 3

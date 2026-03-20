@@ -1,4 +1,6 @@
-const BASE_URL = '/api/v1'
+// 开发：代理到 localhost:4000 (vite.config.ts proxy)
+// 生产：从 VITE_API_BASE_URL 环境变量读取
+const BASE_URL = (import.meta.env['VITE_API_BASE_URL'] as string | undefined) ?? '/api/v1'
 
 function getToken(): string | null {
   return localStorage.getItem('hgt_token') ?? localStorage.getItem('hgt_guest_token')
