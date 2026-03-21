@@ -5,7 +5,7 @@ import { DifficultyFilter } from '../components/lobby/DifficultyFilter'
 import { PuzzleCard } from '../components/lobby/PuzzleCard'
 import { useAuthStore } from '../store/authStore'
 import { useGameStore } from '../store/gameStore'
-import { listPuzzles } from '../api/puzzles'
+import { listPuzzles, getDailyPuzzle } from '../api/puzzles'
 import { startGame } from '../api/games'
 import { createGuest, getProfile } from '../api/auth'
 import type { Puzzle } from '../types/api'
@@ -21,6 +21,7 @@ export function Lobby() {
   const [loadingList, setLoadingList] = useState(false)
   const [startingId, setStartingId] = useState<number | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [dailyPuzzle, setDailyPuzzle] = useState<Puzzle | null>(null)
 
   // Initialize guest session on first visit
   useEffect(() => {
@@ -29,6 +30,7 @@ export function Lobby() {
     } else {
       fetchProfile()
     }
+    fetchDaily()
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
@@ -58,6 +60,13 @@ export function Lobby() {
     } catch {
       // Token may be expired
     }
+  }
+
+  async function fetchDaily() {
+    try {
+      const puzzle = await getDailyPuzzle()
+      setDailyPuzzle(puzzle)
+    } catch { /* 每日推荐加载失败时静默忽略 */ }
   }
 
   async function fetchPuzzles() {
@@ -107,6 +116,25 @@ export function Lobby() {
             当前以游客身份游玩，
             <button onClick={() => navigate('/auth')} className="text-ocean underline ml-1">
               登录后可保存进度并兑换局数
+            </button>
+          </div>
+        )}
+
+        {dailyPuzzle && (
+          <div className="mb-6 p-4 bg-sand/30 rounded-2xl border border-sand/60">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-base">🐢</span>
+              <span className="text-xs font-bold text-ocean uppercase tracking-wide">每日推荐</span>
+            </div>
+            <div className="font-bold text-warm-brown mb-1">{dailyPuzzle.title}</div>
+            <div className="text-sm text-warm-mid mb-3 line-clamp-2">{dailyPuzzle.summary}</div>
+            <button
+              onClick={() => handleStart(dailyPuzzle.id)}
+              disabled={startingId === dailyPuzzle.id}
+              className="px-4 py-1.5 bg-ocean text-white rounded-lg text-sm
+                         disabled:opacity-50 hover:bg-ocean/80 transition-colors"
+            >
+              {startingId === dailyPuzzle.id ? '启动中…' : '开始挑战'}
             </button>
           </div>
         )}
