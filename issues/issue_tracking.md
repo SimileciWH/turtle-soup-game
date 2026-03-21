@@ -2,6 +2,49 @@
 
 ---
 
+## [FIXED] BUG-009 — 移动端页面内容溢出屏幕
+
+**日期：** 2026-03-21
+**严重级别：** Medium
+**状态：** ✅ FIXED
+
+**现象：**
+在移动端浏览器中，多个页面（大厅、游戏页、个人中心）存在横向或纵向内容溢出屏幕，出现不应出现的横向滚动条，布局被撑破。
+
+**根因分析（待确认）：**
+- 固定宽度元素超出 viewport
+- flex/grid 子元素未设置 min-width: 0 导致不收缩
+- 长文本未做 overflow 截断
+
+**修复：**
+- `html/body` 添加 `overflow-x: hidden` + `overscroll-behavior-y: none`
+- `MessageBubble` 添加 `break-words min-w-0` 防长文本撑破气泡
+- 验证：mobile/tablet/desktop 三端 scrollWidth = clientWidth，无横向溢出
+
+---
+
+## [FIXED] BUG-008 — 移动端输入框获焦时页面跳动
+
+**日期：** 2026-03-21
+**严重级别：** Medium
+**状态：** ✅ FIXED
+
+**现象：**
+在 iOS/Android 移动端点击输入框（游戏问答输入框、登录表单等）时，软键盘弹出导致 viewport 变化，页面出现明显跳动/重排，影响用户体验。
+
+**根因分析（待确认）：**
+- 软键盘弹出时浏览器 resize viewport，触发页面重排
+- `min-h-screen`（100vh）在移动端键盘弹出后被压缩，导致布局跳变
+- iOS Safari 的 `100vh` 包含地址栏高度，键盘弹出后实际可视区域骤减
+
+**修复：**
+- `Game.tsx` 根容器改为 `h-dvh overflow-hidden`（dynamic viewport height），键盘弹出时容器自动收缩，MessageList 随之滚动，输入框始终可见
+- `Auth/Lobby/Profile/Result.tsx` 的 `min-h-screen` 全部改为 `min-h-dvh`
+- `QuestionInput` 底部添加 `env(safe-area-inset-bottom)` 适配 iOS Home 键安全区
+- `index.html` viewport 添加 `viewport-fit=cover` 支持 iPhone 全面屏
+
+---
+
 ## [BYPASSED] BUG-007 — Railway 封锁出站 SMTP 端口，注册/找回密码 OTP 邮件无法发送
 
 **日期：** 2026-03-21

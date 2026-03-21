@@ -29,7 +29,8 @@ export function QuestionInput({ onSubmit, disabled }: QuestionInputProps) {
   }
 
   return (
-    <div className="flex flex-col gap-1 p-3 bg-warm-white border-t border-sand/40">
+    <div className="flex flex-col gap-1 p-3 pb-safe bg-warm-white border-t border-sand/40"
+         style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}>
       <div className="flex gap-2 items-end">
         <textarea
           value={value}

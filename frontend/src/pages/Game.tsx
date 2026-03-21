@@ -127,11 +127,15 @@ export function Game() {
   }
 
   if (loading) {
-    return <div className="min-h-screen bg-warm-white flex items-center justify-center text-warm-mid">加载中…</div>
+    return (
+      <div className="h-dvh bg-warm-white flex items-center justify-center text-warm-mid">
+        加载中…
+      </div>
+    )
   }
   if (error) {
     return (
-      <div className="min-h-screen bg-warm-white flex flex-col items-center justify-center gap-4">
+      <div className="h-dvh bg-warm-white flex flex-col items-center justify-center gap-4">
         <div className="text-coral">{error}</div>
         <button onClick={() => navigate('/')} className="text-ocean underline text-sm">返回大厅</button>
       </div>
@@ -142,7 +146,7 @@ export function Game() {
   const isDisabled = store.isStreaming || store.status !== 'active'
 
   return (
-    <div className="min-h-screen bg-warm-white flex flex-col">
+    <div className="h-dvh bg-warm-white flex flex-col overflow-hidden">
       <GameHeader
         title={puzzle?.title || `谜题 #${id}`}
         questionCount={store.questionCount}

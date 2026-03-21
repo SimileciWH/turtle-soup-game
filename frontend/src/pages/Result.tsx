@@ -44,13 +44,13 @@ export function Result() {
   }
 
   if (loading) return (
-    <div className="min-h-screen bg-warm-white flex items-center justify-center text-warm-mid">
+    <div className="min-h-dvh bg-warm-white flex items-center justify-center text-warm-mid">
       加载中…
     </div>
   )
 
   if (error || !result) return (
-    <div className="min-h-screen bg-warm-white flex flex-col items-center justify-center gap-4">
+    <div className="min-h-dvh bg-warm-white flex flex-col items-center justify-center gap-4">
       <div className="text-coral">{error ?? '数据不存在'}</div>
       <Link to="/" className="text-ocean underline text-sm">返回大厅</Link>
     </div>
@@ -59,7 +59,7 @@ export function Result() {
   const won = result.status === 'WON'
 
   return (
-    <div className="min-h-screen bg-warm-white flex flex-col">
+    <div className="min-h-dvh bg-warm-white flex flex-col">
       {/* Header */}
       <header className="sticky top-0 bg-warm-white/90 backdrop-blur border-b border-sand/40 px-4 py-3">
         <div className="max-w-lg mx-auto flex items-center justify-between">

@@ -108,7 +108,7 @@ export function Profile() {
   function handleLogout() { logout(); navigate('/') }
 
   return (
-    <div className="min-h-screen bg-warm-white">
+    <div className="min-h-dvh bg-warm-white">
       <header className="sticky top-0 bg-warm-white/90 backdrop-blur border-b border-sand/40 px-4 py-3">
         <div className="max-w-lg mx-auto flex items-center justify-between">
           <Link to="/" className="text-sm text-warm-mid hover:text-warm-brown">← 大厅</Link>

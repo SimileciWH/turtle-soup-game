@@ -107,7 +107,7 @@ export function Lobby() {
   }
 
   return (
-    <div className="min-h-screen bg-warm-white">
+    <div className="min-h-dvh bg-warm-white">
       <Header />
 
       <main className="max-w-3xl mx-auto px-4 py-6">
