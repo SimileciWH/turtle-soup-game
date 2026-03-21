@@ -19,6 +19,11 @@ export const config = {
     baseUrl: requireEnv('OPENAI_BASE_URL'),
     apiKey: requireEnv('OPENAI_API_KEY')
   },
-  resendApiKey: requireEnv('RESEND_API_KEY'),
+  smtp: {
+    host: requireEnv('SMTP_HOST'),
+    port: parseInt(process.env['SMTP_PORT'] ?? '587', 10),
+    user: requireEnv('SMTP_USER'),
+    pass: requireEnv('SMTP_PASS')
+  },
   corsOrigin: process.env['CORS_ORIGIN'] ?? 'http://localhost:3000'
 } as const
