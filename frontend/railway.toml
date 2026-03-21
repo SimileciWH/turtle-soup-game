@@ -1,8 +1,8 @@
 [build]
-  builder = "nixpacks"
-  buildCommand = "npm run build"
+  builder = "dockerfile"
+  dockerfilePath = "Dockerfile"
 
 [deploy]
-  startCommand = "npx vite preview --port $PORT --host"
+  startCommand = "sh -c 'npx vite preview --port ${PORT} --host'"
   restartPolicyType = "ON_FAILURE"
   restartPolicyMaxRetries = 3
