@@ -4,6 +4,19 @@
 
 ---
 
+## [DONE] BUG-005 修复：邮箱登录 500 — mergeGuestQuota FK 约束
+**日期：** 2026-03-21 | **状态：** ✅ 完成
+
+**描述：** 修复游客完成游戏后再邮箱登录，触发 500 错误的两个根因。
+
+**修复内容：**
+- `backend/src/services/authService.ts` `createUserFromEmail`：guest 存在时改为 `update` 追加 email，而非 create 新用户（修复 guestToken 唯一键冲突）
+- `backend/src/services/authService.ts` `mergeGuestQuota`：用 `$transaction` 先迁移 `game_sessions` 再删除 guest（修复 FK 约束违反）
+
+**验证：** Playwright 浏览器全流程：游客游戏 → 邮箱发码 → 输入验证码 → 登录成功跳转大厅，quota 正常扣减（3→2）
+
+---
+
 ## [DONE] Railway 部署修复 + 生产数据库 Seed 自动化
 **日期：** 2026-03-21 | **状态：** ✅ 完成
 
