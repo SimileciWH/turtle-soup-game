@@ -45,18 +45,25 @@
 
 ---
 
-## [BYPASSED] BUG-007 — Railway 封锁出站 SMTP 端口，注册/找回密码 OTP 邮件无法发送
+## [IN_PROGRESS] BUG-007 — Railway 封锁出站 SMTP 端口，注册/找回密码 OTP 邮件无法发送
 
 **日期：** 2026-03-21
 **严重级别：** High
-**状态：** 🔀 BYPASSED — 注册已改为无验证码直接创建账号；找回密码暂时禁用显示"功能暂时不可用"
+**状态：** 🔄 IN PROGRESS — OTP 代码已恢复，等待 Resend 域名验证 + Railway 环境变量更新
 
-**临时方案：** emailVerified 在注册时直接设为 true，跳过 OTP 流程。
+**域名：** `ai-smilion.tech`（2026-03-21 购买，命名审核已通过）
 
-**恢复条件：** 在 resend.com/domains 验证 `ai-turtle-soup.lol` 域名后：
-1. 在 Railway 后端添加环境变量 `RESEND_FROM=noreply@ai-turtle-soup.lol`
-2. 恢复 `authService.ts` 中的 OTP 注册流程
-3. 恢复 `forgotPassword()` 实现
+**恢复进度：**
+- ✅ `authService.ts` register() 已恢复：发送 OTP，返回 {sent:true}
+- ✅ `authService.ts` forgotPassword() 已恢复：发送重置 OTP
+- ✅ `Auth.tsx` 前端已恢复：注册→OTP验证步骤，找回密码→OTP验证步骤
+- ⏳ 用户需在 resend.com/domains 验证 `ai-smilion.tech`
+- ⏳ Railway 后端需添加 `RESEND_FROM=noreply@ai-smilion.tech`
+
+**完成条件：**
+1. Resend 域名验证通过（添加 TXT/CNAME/MX DNS 记录到阿里云）
+2. Railway 后端 Variables → `RESEND_FROM=noreply@ai-smilion.tech`
+3. 浏览器验证注册流程（收到 OTP 邮件 → 验证 → 登录成功）
 
 **现象：** POST /api/v1/auth/register 返回 500；Railway 上无论 port 25/465/587 均 ETIMEDOUT/ENETUNREACH
 
