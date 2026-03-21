@@ -17,4 +17,4 @@ COPY --from=builder /app/package*.json ./
 
 ENV PORT=4173
 EXPOSE 4173
-CMD sh -c "npx vite preview --port ${PORT} --host"
+CMD sh -c "npx vite preview --port ${PORT} --host --allowedHosts all"

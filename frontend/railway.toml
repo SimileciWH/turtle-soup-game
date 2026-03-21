@@ -3,6 +3,6 @@
   dockerfilePath = "Dockerfile"
 
 [deploy]
-  startCommand = "sh -c 'npx vite preview --port ${PORT} --host'"
+  startCommand = "sh -c 'npx vite preview --port ${PORT} --host --allowedHosts all'"
   restartPolicyType = "ON_FAILURE"
   restartPolicyMaxRetries = 3
