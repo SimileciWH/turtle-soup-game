@@ -29,6 +29,22 @@ app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() })
 })
 
+// Temporary debug: test Resend email config (remove after diagnosis)
+app.get('/api/debug/email-test', async (_req, res) => {
+  const { Resend } = await import('resend')
+  const apiKey = process.env['RESEND_API_KEY']
+  const from = process.env['RESEND_FROM'] ?? 'onboarding@resend.dev'
+  if (!apiKey) { res.json({ error: 'RESEND_API_KEY not set', from }); return }
+  const client = new Resend(apiKey)
+  const { data, error } = await client.emails.send({
+    from: `"海龟汤 Debug" <${from}>`,
+    to: 'smilion.wang.32@gmail.com',
+    subject: 'Debug Test',
+    html: '<p>debug</p>'
+  })
+  res.json({ from, data, error: error ? JSON.stringify(error) : null })
+})
+
 app.use('/api/v1/auth', authRoutes)
 app.use('/api/v1/puzzles', puzzleRoutes)
 app.use('/api/v1/games', gameRoutes)
