@@ -6,12 +6,28 @@ import * as ctrl from '../controllers/authController'
 
 const router = Router()
 
+// Guest
 router.post('/guest', asyncHandler(ctrl.handleGuest))
-router.post('/email/send', emailRateLimit, asyncHandler(ctrl.handleSendEmail))
-router.post('/email/verify', asyncHandler(ctrl.handleVerifyEmail))
+
+// Registration
+router.post('/register', emailRateLimit, asyncHandler(ctrl.handleRegister))
+router.post('/register/verify', asyncHandler(ctrl.handleRegisterVerify))
+
+// Login
+router.post('/login', asyncHandler(ctrl.handleLogin))
+
+// Forgot / Reset password
+router.post('/password/forgot', emailRateLimit, asyncHandler(ctrl.handleForgotPassword))
+router.post('/password/reset', asyncHandler(ctrl.handleResetPassword))
+
+// Change password + delete account (authenticated)
+router.post('/password/change', authMiddleware, asyncHandler(ctrl.handleChangePassword))
+router.delete('/account', authMiddleware, asyncHandler(ctrl.handleDeleteAccount))
+
+// Profile
 router.get('/me', authMiddleware, asyncHandler(ctrl.handleMe))
 
-// 开发环境专用：绕过 OTP 直接获取 JWT（生产环境此路由不存在）
+// 开发环境专用
 if (process.env['NODE_ENV'] === 'development') {
   router.post('/dev-login', asyncHandler(ctrl.handleDevLogin))
 }

@@ -5,12 +5,47 @@ export function createGuest() {
   return api.post<GuestResponse>('/auth/guest', {})
 }
 
-export function sendEmailCode(email: string) {
-  return api.post<{ message: string }>('/auth/email/send', { email })
+export function register(email: string, password: string, guestToken?: string) {
+  return api.post<{ message: string }>('/auth/register', {
+    email,
+    password,
+    guest_token: guestToken
+  })
 }
 
-export function verifyEmailCode(email: string, code: string, guestToken?: string) {
-  return api.post<{ token: string }>('/auth/email/verify', { email, code, guest_token: guestToken })
+export function verifyRegistration(email: string, code: string, guestToken?: string) {
+  return api.post<{ token: string }>('/auth/register/verify', {
+    email,
+    code,
+    guest_token: guestToken
+  })
+}
+
+export function login(email: string, password: string) {
+  return api.post<{ token: string }>('/auth/login', { email, password })
+}
+
+export function forgotPassword(email: string) {
+  return api.post<{ message: string }>('/auth/password/forgot', { email })
+}
+
+export function resetPassword(email: string, code: string, newPassword: string) {
+  return api.post<{ token: string }>('/auth/password/reset', {
+    email,
+    code,
+    new_password: newPassword
+  })
+}
+
+export function changePassword(currentPassword: string, newPassword: string) {
+  return api.post<{ message: string }>('/auth/password/change', {
+    current_password: currentPassword,
+    new_password: newPassword
+  })
+}
+
+export function deleteAccount(password: string) {
+  return api.delete<{ message: string }>('/auth/account', { password })
 }
 
 export function getProfile() {

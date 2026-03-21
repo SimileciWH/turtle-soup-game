@@ -10,6 +10,11 @@ datasource db {
 model User {
   id             BigInt         @id @default(autoincrement())
   email          String?        @unique
+  passwordHash   String?        @map("password_hash")
+  emailVerified  Boolean        @default(false) @map("email_verified")
+  loginAttempts  Int            @default(0) @map("login_attempts")
+  lockedUntil    DateTime?      @map("locked_until")
+  deletedAt      DateTime?      @map("deleted_at")
   guestToken     String?        @unique @map("guest_token")
   quotaFree      Int            @default(3) @map("quota_free")
   quotaPaid      Int            @default(0) @map("quota_paid")
