@@ -1,19 +1,19 @@
 import { Resend } from 'resend'
 import nodemailer from 'nodemailer'
 
-// RESEND_FROM env var: set to noreply@yourdomain.com after domain verified on resend.com/domains
-// Fallback: onboarding@resend.dev (Resend test mode — only sends to account owner email)
-const FROM = `"海龟汤像素馆" <${process.env['RESEND_FROM'] ?? 'onboarding@resend.dev'}>`
-const FROM_SMTP = `"海龟汤像素馆" <${process.env['SMTP_USER']}>`
-
-// Use Resend API if RESEND_API_KEY is set, otherwise fall back to SMTP
+// Read env vars at call time (not module load time) so Railway env var updates take effect without restart
+function getFrom(): string {
+  return `"海龟汤像素馆" <${process.env['RESEND_FROM'] ?? 'onboarding@resend.dev'}>`
+}
+function getFromSmtp(): string {
+  return `"海龟汤像素馆" <${process.env['SMTP_USER']}>`
+}
+function getResendClient(): Resend | null {
+  return process.env['RESEND_API_KEY'] ? new Resend(process.env['RESEND_API_KEY']) : null
+}
 function useResend(): boolean {
   return Boolean(process.env['RESEND_API_KEY'])
 }
-
-const resendClient = process.env['RESEND_API_KEY']
-  ? new Resend(process.env['RESEND_API_KEY'])
-  : null
 
 const smtpPort = Number(process.env['SMTP_PORT'] ?? 465)
 const smtpTransporter = nodemailer.createTransport({
@@ -30,9 +30,10 @@ const smtpTransporter = nodemailer.createTransport({
 } as nodemailer.TransportOptions)
 
 export async function sendOtpEmail(to: string, code: string, subject: string): Promise<void> {
+  const resendClient = getResendClient()
   if (useResend() && resendClient) {
     const { error } = await resendClient.emails.send({
-      from: FROM,
+      from: getFrom(),
       to,
       subject,
       html: buildOtpHtml(code)
@@ -40,7 +41,7 @@ export async function sendOtpEmail(to: string, code: string, subject: string): P
     if (error) throw new Error(`Resend error: ${JSON.stringify(error)}`)
   } else {
     await smtpTransporter.sendMail({
-      from: FROM_SMTP,
+      from: getFromSmtp(),
       to,
       subject,
       html: buildOtpHtml(code)

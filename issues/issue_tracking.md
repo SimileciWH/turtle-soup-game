@@ -2,6 +2,63 @@
 
 ---
 
+## [OPEN] BUG-011 — 前端 Railway 部署未更新（OTP 恢复代码未上线）
+
+**日期：** 2026-03-21
+**严重级别：** High
+**状态：** 🔴 OPEN
+
+**现象：**
+生产前端仍服务旧版 bundle（`index-CNlaRhfR.js`），尽管 `ed9bb6f` 提交（OTP恢复）已推送到 main 分支并包含 `frontend/src/pages/Auth.tsx` 变更。具体表现：
+- 忘记密码点击后显示"找回密码功能暂时不可用，如需帮助请联系管理员"，不触发任何 API 调用
+- 注册成功后前端仍尝试从 `{sent: true}` 中取 `token`，导致以 undefined 作为 JWT 访问 `/profile`，得到 401
+
+**验证：**
+```javascript
+// 确认旧代码仍在线
+fetch('/assets/index-CNlaRhfR.js').then(r=>r.text()).then(t=>t.includes('暂时不可用'))
+// → true
+```
+
+**根因（待确认）：**
+Railway 前端服务可能需要手动触发重新部署，或 build 过程失败但未报错。
+
+**修复步骤：**
+1. 进入 Railway 控制台 → frontend 服务 → 手动点击 "Redeploy"
+2. 等待新 build 完成（新 bundle hash 应与 `CNlaRhfR` 不同）
+3. 验证：`fetch('/assets/index-*.js')` 中不含"暂时不可用"
+
+---
+
+## [OPEN] BUG-010 — 后端邮件发送失败（RESEND_FROM 环境变量未配置）
+
+**日期：** 2026-03-21
+**严重级别：** High
+**状态：** 🔴 OPEN
+
+**现象：**
+直接调用 `POST /api/v1/auth/password/forgot` 返回 503 EMAIL_SEND_FAILED。后端 OTP 逻辑已恢复（路由存在、rate limit 生效），但邮件发送因 env 缺失失败。
+
+**验证（直接 API 调用）：**
+```
+POST https://backend-production-03c0e.up.railway.app/api/v1/auth/password/forgot
+{"email":"smilion.wang.32@gmail.com"}
+→ {"error":"EMAIL_SEND_FAILED","message":"验证码邮件发送失败","data":null}
+```
+
+**根因：**
+Railway 后端 Variables 缺少 `RESEND_FROM=noreply@ai-smilion.tech`（BUG-007 的待完成步骤之一）。
+
+**修复步骤：**
+1. Railway → backend 服务 → Variables
+2. 添加 `RESEND_FROM=noreply@ai-smilion.tech`
+3. 等待自动重新部署
+4. 重新测试 `/auth/password/forgot` 和 `/auth/register`
+
+---
+
+
+
 ## [FIXED] BUG-009 — 移动端页面内容溢出屏幕
 
 **日期：** 2026-03-21
