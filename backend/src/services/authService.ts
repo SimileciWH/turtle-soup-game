@@ -61,8 +61,8 @@ export async function register(
   try {
     await sendOtpEmail(email, code, '海龟汤像素馆 — 注册验证码')
   } catch (err) {
-    console.error('[emailService] register OTP send failed:', err)
-    throw Errors.EMAIL_SEND_FAILED()
+    const detail = err instanceof Error ? err.message : String(err)
+    throw Errors.EMAIL_SEND_FAILED(detail)
   }
 
   return { sent: true }
@@ -153,8 +153,8 @@ export async function forgotPassword(email: string): Promise<void> {
   try {
     await sendOtpEmail(email, code, '海龟汤像素馆 — 密码重置验证码')
   } catch (err) {
-    console.error('[emailService] forgotPassword OTP send failed:', err)
-    throw Errors.EMAIL_SEND_FAILED()
+    const detail = err instanceof Error ? err.message : String(err)
+    throw Errors.EMAIL_SEND_FAILED(detail)
   }
 }
 

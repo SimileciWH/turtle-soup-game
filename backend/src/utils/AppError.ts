@@ -33,5 +33,5 @@ export const Errors = {
   RATE_LIMITED:           () => new AppError('RATE_LIMITED', '请求频率超限', 429),
   TOO_MANY_REQUESTS:      () => new AppError('TOO_MANY_REQUESTS', '发送太频繁，请稍后再试', 429),
   AI_UNAVAILABLE:         () => new AppError('AI_UNAVAILABLE', 'AI 服务暂时不可用', 503),
-  EMAIL_SEND_FAILED:      () => new AppError('EMAIL_SEND_FAILED', '验证码邮件发送失败', 503)
+  EMAIL_SEND_FAILED:      (detail?: string) => new AppError('EMAIL_SEND_FAILED', detail ? `验证码邮件发送失败: ${detail}` : '验证码邮件发送失败', 503)
 } as const
