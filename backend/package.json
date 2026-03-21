@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "description": "AI 海龟汤游戏后端",
   "main": "dist/app.js",
+  "prisma": {
+    "seed": "ts-node --transpile-only prisma/seed.ts"
+  },
   "scripts": {
     "dev": "dotenv -e ../.env -- ts-node-dev --respawn --transpile-only src/app.ts",
     "build": "tsc",
