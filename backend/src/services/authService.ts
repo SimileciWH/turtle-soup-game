@@ -35,37 +35,36 @@ export async function getUserByGuestToken(token: string): Promise<User | null> {
 
 // ── Registration ─────────────────────────────────────────
 
-// Email verification bypassed: user is immediately verified on register.
-// TODO: restore OTP flow once Resend domain is verified.
 export async function register(
   email: string,
   password: string,
-  guestToken?: string
-): Promise<{ token: string }> {
+  _guestToken?: string
+): Promise<{ sent: boolean }> {
   if (!EMAIL_REGEX.test(email)) throw Errors.INVALID_EMAIL()
   if (password.length < 8) throw Errors.INVALID_PASSWORD()
 
   const existing = await prisma.user.findUnique({ where: { email } })
-  if (existing) throw Errors.EMAIL_ALREADY_EXISTS()
+  if (existing?.emailVerified) throw Errors.EMAIL_ALREADY_EXISTS()
 
   const passwordHash = await bcrypt.hash(password, BCRYPT_ROUNDS)
-  const guest = guestToken
-    ? await prisma.user.findUnique({ where: { guestToken } })
-    : null
 
-  const user = await prisma.user.create({
-    data: {
-      email,
-      passwordHash,
-      emailVerified: true,
-      quotaFree: guest?.quotaFree ?? 3,
-      quotaPaid: guest?.quotaPaid ?? 0
-    }
-  })
+  if (existing) {
+    // Re-registration: update passwordHash for unverified account
+    await prisma.user.update({ where: { id: existing.id }, data: { passwordHash } })
+  } else {
+    await prisma.user.create({ data: { email, passwordHash, emailVerified: false } })
+  }
 
-  if (guest) await mergeGuestQuota(user.id, guestToken!)
+  const code = generateOtpCode()
+  saveOtp(OTP_KEY.register(email), code)
 
-  return { token: signJwt(user.id) }
+  try {
+    await sendOtpEmail(email, code, '海龟汤像素馆 — 注册验证码')
+  } catch {
+    throw Errors.EMAIL_SEND_FAILED()
+  }
+
+  return { sent: true }
 }
 
 export async function verifyRegistration(
@@ -144,8 +143,17 @@ async function handleFailedLogin(user: User): Promise<void> {
 
 export async function forgotPassword(email: string): Promise<void> {
   const user = await prisma.user.findUnique({ where: { email } })
-  // TODO: restore when Resend domain is verified
-  throw Errors.EMAIL_SEND_FAILED()
+  // Silently skip if user not found (prevents email enumeration)
+  if (!user || user.deletedAt || !user.emailVerified) return
+
+  const code = generateOtpCode()
+  saveOtp(OTP_KEY.reset(email), code)
+
+  try {
+    await sendOtpEmail(email, code, '海龟汤像素馆 — 密码重置验证码')
+  } catch {
+    throw Errors.EMAIL_SEND_FAILED()
+  }
 }
 
 export async function resetPassword(

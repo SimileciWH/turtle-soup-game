@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../store/authStore'
 import {
   register, verifyRegistration,
-  login, resetPassword,
+  login, forgotPassword, resetPassword,
   getProfile
 } from '../api/auth'
 import { clearGuestToken, getOrCreateGuestToken } from '../utils/guestToken'
@@ -49,8 +49,8 @@ export function Auth() {
     setLoading(true); setError(null)
     try {
       const guestToken = getOrCreateGuestToken() ?? undefined
-      const { token } = await register(email, password, guestToken)
-      await finishAuth(token)
+      await register(email, password, guestToken)
+      setStep('verify')
     } catch (e) {
       setError(e instanceof Error ? e.message : '注册失败')
     } finally { setLoading(false) }
@@ -68,7 +68,13 @@ export function Auth() {
   }
 
   async function handleForgotSend() {
-    setError('找回密码功能暂时不可用，如需帮助请联系管理员')
+    setLoading(true); setError(null)
+    try {
+      await forgotPassword(email)
+      setStep('verify')
+    } catch (e) {
+      setError(e instanceof Error ? e.message : '发送失败')
+    } finally { setLoading(false) }
   }
 
   async function handleResetVerify() {

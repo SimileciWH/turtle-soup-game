@@ -6,7 +6,7 @@ export function createGuest() {
 }
 
 export function register(email: string, password: string, guestToken?: string) {
-  return api.post<{ token: string }>('/auth/register', {
+  return api.post<{ sent: boolean }>('/auth/register', {
     email,
     password,
     guest_token: guestToken

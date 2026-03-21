@@ -23,8 +23,8 @@ export async function handleRegister(req: Request, res: Response): Promise<void>
   }
   if (!email || !password) throw Errors.INVALID_INPUT('缺少 email 或 password')
 
-  const { token } = await authService.register(email, password, guest_token)
-  res.json({ token })
+  await authService.register(email, password, guest_token)
+  res.json({ sent: true })
 }
 
 export async function handleRegisterVerify(req: Request, res: Response): Promise<void> {
