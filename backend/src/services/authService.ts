@@ -35,11 +35,13 @@ export async function getUserByGuestToken(token: string): Promise<User | null> {
 
 // ── Registration ─────────────────────────────────────────
 
+// Email verification bypassed: user is immediately verified on register.
+// TODO: restore OTP flow once Resend domain is verified.
 export async function register(
   email: string,
   password: string,
   guestToken?: string
-): Promise<void> {
+): Promise<{ token: string }> {
   if (!EMAIL_REGEX.test(email)) throw Errors.INVALID_EMAIL()
   if (password.length < 8) throw Errors.INVALID_PASSWORD()
 
@@ -51,19 +53,19 @@ export async function register(
     ? await prisma.user.findUnique({ where: { guestToken } })
     : null
 
-  await prisma.user.create({
+  const user = await prisma.user.create({
     data: {
       email,
       passwordHash,
-      emailVerified: false,
+      emailVerified: true,
       quotaFree: guest?.quotaFree ?? 3,
       quotaPaid: guest?.quotaPaid ?? 0
     }
   })
 
-  const code = generateOtpCode()
-  saveOtp(OTP_KEY.register(email), code)
-  await sendOtpEmail(email, code, '【海龟汤】邮箱验证码')
+  if (guest) await mergeGuestQuota(user.id, guestToken!)
+
+  return { token: signJwt(user.id) }
 }
 
 export async function verifyRegistration(
@@ -142,12 +144,8 @@ async function handleFailedLogin(user: User): Promise<void> {
 
 export async function forgotPassword(email: string): Promise<void> {
   const user = await prisma.user.findUnique({ where: { email } })
-  // Always succeed to prevent email enumeration
-  if (!user || user.deletedAt) return
-
-  const code = generateOtpCode()
-  saveOtp(OTP_KEY.reset(email), code)
-  await sendOtpEmail(email, code, '【海龟汤】密码重置验证码')
+  // TODO: restore when Resend domain is verified
+  throw Errors.EMAIL_SEND_FAILED()
 }
 
 export async function resetPassword(

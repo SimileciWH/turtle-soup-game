@@ -1,7 +1,9 @@
 import { Resend } from 'resend'
 import nodemailer from 'nodemailer'
 
-const FROM = '"海龟汤像素馆" <onboarding@resend.dev>'
+// RESEND_FROM env var: set to noreply@yourdomain.com after domain verified on resend.com/domains
+// Fallback: onboarding@resend.dev (Resend test mode — only sends to account owner email)
+const FROM = `"海龟汤像素馆" <${process.env['RESEND_FROM'] ?? 'onboarding@resend.dev'}>`
 const FROM_SMTP = `"海龟汤像素馆" <${process.env['SMTP_USER']}>`
 
 // Use Resend API if RESEND_API_KEY is set, otherwise fall back to SMTP
@@ -19,23 +21,23 @@ const smtpTransporter = nodemailer.createTransport({
   port: smtpPort,
   secure: smtpPort === 465,
   auth: {
-    user: process.env['SMTP_USER'],
-    pass: process.env['SMTP_PASS']
+    user: process.env['SMTP_USER'] ?? '',
+    pass: process.env['SMTP_PASS'] ?? ''
   },
   connectionTimeout: 10_000,
   greetingTimeout: 10_000,
-  socketTimeout: 15_000,
-  family: 4
-})
+  socketTimeout: 15_000
+} as nodemailer.TransportOptions)
 
 export async function sendOtpEmail(to: string, code: string, subject: string): Promise<void> {
   if (useResend() && resendClient) {
-    await resendClient.emails.send({
+    const { error } = await resendClient.emails.send({
       from: FROM,
       to,
       subject,
       html: buildOtpHtml(code)
     })
+    if (error) throw new Error(`Resend error: ${error.message}`)
   } else {
     await smtpTransporter.sendMail({
       from: FROM_SMTP,

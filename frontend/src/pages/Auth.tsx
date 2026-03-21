@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../store/authStore'
 import {
   register, verifyRegistration,
-  login, forgotPassword, resetPassword,
+  login, resetPassword,
   getProfile
 } from '../api/auth'
 import { clearGuestToken, getOrCreateGuestToken } from '../utils/guestToken'
@@ -49,8 +49,8 @@ export function Auth() {
     setLoading(true); setError(null)
     try {
       const guestToken = getOrCreateGuestToken() ?? undefined
-      await register(email, password, guestToken)
-      setStep('verify')
+      const { token } = await register(email, password, guestToken)
+      await finishAuth(token)
     } catch (e) {
       setError(e instanceof Error ? e.message : '注册失败')
     } finally { setLoading(false) }
@@ -68,14 +68,7 @@ export function Auth() {
   }
 
   async function handleForgotSend() {
-    setLoading(true); setError(null)
-    try {
-      await forgotPassword(email)
-      setStep('verify')
-      setSuccessMsg('验证码已发送（若邮箱已注册）')
-    } catch (e) {
-      setError(e instanceof Error ? e.message : '发送失败')
-    } finally { setLoading(false) }
+    setError('找回密码功能暂时不可用，如需帮助请联系管理员')
   }
 
   async function handleResetVerify() {
@@ -274,7 +267,7 @@ export function Auth() {
       return mode === 'forgot' ? '重置密码' : '验证并登录'
     }
     if (mode === 'login') return '登录'
-    if (mode === 'register') return '发送验证码'
+    if (mode === 'register') return '立即注册'
     return '发送验证码'
   }
 }

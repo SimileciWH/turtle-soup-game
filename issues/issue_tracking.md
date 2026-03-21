@@ -2,11 +2,18 @@
 
 ---
 
-## [OPEN] BUG-007 — Railway 封锁出站 SMTP 端口，注册/找回密码 OTP 邮件无法发送
+## [BYPASSED] BUG-007 — Railway 封锁出站 SMTP 端口，注册/找回密码 OTP 邮件无法发送
 
 **日期：** 2026-03-21
 **严重级别：** High
-**状态：** ⚠️ OPEN — 需要配置 Resend API Key
+**状态：** 🔀 BYPASSED — 注册已改为无验证码直接创建账号；找回密码暂时禁用显示"功能暂时不可用"
+
+**临时方案：** emailVerified 在注册时直接设为 true，跳过 OTP 流程。
+
+**恢复条件：** 在 resend.com/domains 验证 `ai-turtle-soup.lol` 域名后：
+1. 在 Railway 后端添加环境变量 `RESEND_FROM=noreply@ai-turtle-soup.lol`
+2. 恢复 `authService.ts` 中的 OTP 注册流程
+3. 恢复 `forgotPassword()` 实现
 
 **现象：** POST /api/v1/auth/register 返回 500；Railway 上无论 port 25/465/587 均 ETIMEDOUT/ENETUNREACH
 
