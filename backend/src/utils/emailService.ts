@@ -37,7 +37,7 @@ export async function sendOtpEmail(to: string, code: string, subject: string): P
       subject,
       html: buildOtpHtml(code)
     })
-    if (error) throw new Error(`Resend error: ${error.message}`)
+    if (error) throw new Error(`Resend error: ${JSON.stringify(error)}`)
   } else {
     await smtpTransporter.sendMail({
       from: FROM_SMTP,
