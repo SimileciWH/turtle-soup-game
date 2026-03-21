@@ -35,6 +35,7 @@ cp .env.example .env
 #   OPENAI_API_KEY=你的 API Key
 #   OPENAI_MODEL=deepseek-v3-0324（或服务商提供的模型名）
 #   RESEND_API_KEY=你的 Resend API Key
+#   RESEND_FROM=noreply@ai-smilion.tech（Resend 域名验证后填入）
 #   JWT_SECRET=随机 64 位字符串
 ```
 
