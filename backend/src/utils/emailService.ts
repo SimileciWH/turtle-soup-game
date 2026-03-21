@@ -11,7 +11,8 @@ const transporter = nodemailer.createTransport({
   },
   connectionTimeout: 10_000,
   greetingTimeout: 10_000,
-  socketTimeout: 15_000
+  socketTimeout: 15_000,
+  family: 4
 })
 
 const FROM = `"海龟汤像素馆" <${process.env['SMTP_USER']}>`
