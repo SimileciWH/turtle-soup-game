@@ -62,17 +62,18 @@ export async function verifyEmailCode(
 }
 
 async function createUserFromEmail(email: string, guestToken?: string): Promise<User> {
-  const guest = guestToken
-    ? await prisma.user.findUnique({ where: { guestToken } })
-    : null
+  if (guestToken) {
+    const guest = await prisma.user.findUnique({ where: { guestToken } })
+    if (guest) {
+      return prisma.user.update({
+        where: { id: guest.id },
+        data: { email }
+      })
+    }
+  }
 
   return prisma.user.create({
-    data: {
-      email,
-      guestToken: guestToken ?? null,
-      quotaFree: guest?.quotaFree ?? 3,
-      quotaPaid: guest?.quotaPaid ?? 0
-    }
+    data: { email, quotaFree: 3, quotaPaid: 0 }
   })
 }
 
@@ -80,11 +81,17 @@ async function mergeGuestQuota(userId: bigint, guestToken: string): Promise<void
   const guest = await prisma.user.findUnique({ where: { guestToken } })
   if (!guest || guest.id === userId) return
 
-  await prisma.user.update({
-    where: { id: userId },
-    data: { quotaPaid: { increment: guest.quotaPaid } }
-  })
-  await prisma.user.delete({ where: { id: guest.id } })
+  await prisma.$transaction([
+    prisma.gameSession.updateMany({
+      where: { userId: guest.id },
+      data: { userId }
+    }),
+    prisma.user.update({
+      where: { id: userId },
+      data: { quotaPaid: { increment: guest.quotaPaid } }
+    }),
+    prisma.user.delete({ where: { id: guest.id } })
+  ])
 }
 
 // ── JWT ──────────────────────────────────────────────────
