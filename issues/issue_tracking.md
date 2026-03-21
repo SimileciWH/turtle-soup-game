@@ -2,6 +2,22 @@
 
 ---
 
+## [FIXED] BUG-006 — 注册时 guest_token 唯一约束冲突
+
+**日期：** 2026-03-21
+**严重级别：** High
+**状态：** ✅ FIXED
+
+**现象：** POST /api/v1/auth/register 返回 500，日志显示 `PrismaClientKnownRequestError: Unique constraint failed on the fields: (guest_token)` (P2002)
+
+**根因：** `register` 函数将 `guestToken` 赋给新注册用户，但 guest 账户仍存在且拥有相同 `guestToken`，违反唯一约束
+
+**修复：** 注册时新用户不设置 `guestToken`（只复制 `quotaFree/quotaPaid`），在 `verifyRegistration` 时由 `mergeGuestQuota` 处理 guest 账户合并和删除
+
+**验证：** validation/03211133/ — 注册流程截图
+
+---
+
 ## [FIXED] BUG-002 — AI API 模型名称不匹配
 
 **日期：** 2026-03-20

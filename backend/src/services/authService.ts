@@ -56,7 +56,6 @@ export async function register(
       email,
       passwordHash,
       emailVerified: false,
-      guestToken: guest ? guestToken : null,
       quotaFree: guest?.quotaFree ?? 3,
       quotaPaid: guest?.quotaPaid ?? 0
     }
