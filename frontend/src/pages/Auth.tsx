@@ -6,7 +6,7 @@ import {
   login, forgotPassword, resetPassword,
   getProfile
 } from '../api/auth'
-import { clearGuestToken, getGuestToken } from '../utils/guestToken'
+import { clearGuestToken, getOrCreateGuestToken } from '../utils/guestToken'
 
 type Mode = 'login' | 'register' | 'forgot'
 type Step = 'form' | 'verify'
@@ -48,7 +48,7 @@ export function Auth() {
   async function handleRegisterSend() {
     setLoading(true); setError(null)
     try {
-      const guestToken = getGuestToken() ?? undefined
+      const guestToken = getOrCreateGuestToken() ?? undefined
       await register(email, password, guestToken)
       setStep('verify')
     } catch (e) {
@@ -59,7 +59,7 @@ export function Auth() {
   async function handleRegisterVerify() {
     setLoading(true); setError(null)
     try {
-      const guestToken = getGuestToken() ?? undefined
+      const guestToken = getOrCreateGuestToken() ?? undefined
       const { token } = await verifyRegistration(email, code, guestToken)
       await finishAuth(token)
     } catch (e) {
