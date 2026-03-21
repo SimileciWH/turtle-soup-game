@@ -2,6 +2,28 @@
 
 ---
 
+## [OPEN] BUG-007 — Railway 封锁出站 SMTP 端口，注册/找回密码 OTP 邮件无法发送
+
+**日期：** 2026-03-21
+**严重级别：** High
+**状态：** ⚠️ OPEN — 需要配置 Resend API Key
+
+**现象：** POST /api/v1/auth/register 返回 500；Railway 上无论 port 25/465/587 均 ETIMEDOUT/ENETUNREACH
+
+**根因：** Railway 封锁了所有出站 SMTP 端口。Gmail 先返回 IPv6 地址（ENETUNREACH），IPv4 地址也连不上（ETIMEDOUT）。
+
+**临时处理：** 代码已更新为 Resend API + SMTP 双模式（`emailService.ts`），优先使用 `RESEND_API_KEY`
+
+**待完成操作：**
+1. 在 https://resend.com 免费注册并创建 API Key
+2. Railway 后端添加环境变量：`RESEND_API_KEY=re_xxx`
+3. 重新部署后端（自动触发）
+4. 验证注册邮件发送
+
+**参考：** validation/03211133/ — 当前登录流程已验证正常（login/wrong-password 均通过）
+
+---
+
 ## [FIXED] BUG-006 — 注册时 guest_token 唯一约束冲突
 
 **日期：** 2026-03-21

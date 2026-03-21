@@ -1,7 +1,20 @@
+import { Resend } from 'resend'
 import nodemailer from 'nodemailer'
 
+const FROM = '"海龟汤像素馆" <onboarding@resend.dev>'
+const FROM_SMTP = `"海龟汤像素馆" <${process.env['SMTP_USER']}>`
+
+// Use Resend API if RESEND_API_KEY is set, otherwise fall back to SMTP
+function useResend(): boolean {
+  return Boolean(process.env['RESEND_API_KEY'])
+}
+
+const resendClient = process.env['RESEND_API_KEY']
+  ? new Resend(process.env['RESEND_API_KEY'])
+  : null
+
 const smtpPort = Number(process.env['SMTP_PORT'] ?? 465)
-const transporter = nodemailer.createTransport({
+const smtpTransporter = nodemailer.createTransport({
   host: process.env['SMTP_HOST'] ?? 'smtp.gmail.com',
   port: smtpPort,
   secure: smtpPort === 465,
@@ -15,15 +28,22 @@ const transporter = nodemailer.createTransport({
   family: 4
 })
 
-const FROM = `"海龟汤像素馆" <${process.env['SMTP_USER']}>`
-
 export async function sendOtpEmail(to: string, code: string, subject: string): Promise<void> {
-  await transporter.sendMail({
-    from: FROM,
-    to,
-    subject,
-    html: buildOtpHtml(code)
-  })
+  if (useResend() && resendClient) {
+    await resendClient.emails.send({
+      from: FROM,
+      to,
+      subject,
+      html: buildOtpHtml(code)
+    })
+  } else {
+    await smtpTransporter.sendMail({
+      from: FROM_SMTP,
+      to,
+      subject,
+      html: buildOtpHtml(code)
+    })
+  }
 }
 
 function buildOtpHtml(code: string): string {
