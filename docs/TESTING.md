@@ -1,6 +1,6 @@
 # 测试说明文档 — AI 海龟汤游戏
 
-**版本：** v1.2 | **日期：** 2026-03-20  
+**版本：** v1.3 | **日期：** 2026-03-21
 **关联文档：** PRD v1.0 · TDD v1.1  
 **状态：** 已确认
 
@@ -223,6 +223,8 @@ describe('inputGuard middleware', () => {
 
 ### 3.1 用户认证 `auth.test.ts`
 
+#### 3.1.1 游客模式
+
 ```typescript
 describe('POST /api/v1/auth/guest', () => {
   test('返回 guest_token 和初始局数', async () => {
@@ -233,21 +235,336 @@ describe('POST /api/v1/auth/guest', () => {
     expect(res.body.quota_paid).toBe(0)
   })
 })
+```
 
-describe('POST /api/v1/auth/email/verify', () => {
-  test('验证码正确：返回 JWT token', async () => {
-    await sendEmailCode('test@example.com')
+#### 3.1.2 注册流程
+
+```typescript
+describe('POST /api/v1/auth/register — 注册（发送验证码）', () => {
+  test('新邮箱注册：发送 OTP，返回 200', async () => {
     const res = await request(app)
-      .post('/api/v1/auth/email/verify')
-      .send({ email: 'test@example.com', code: getTestCode('test@example.com') })
+      .post('/api/v1/auth/register')
+      .send({ email: 'newuser@example.com', password: 'password123' })
+    expect(res.status).toBe(200)
+    expect(res.body.message).toContain('验证码')
+  })
+
+  test('密码少于 8 位：返回 400 INVALID_PASSWORD', async () => {
+    const res = await request(app)
+      .post('/api/v1/auth/register')
+      .send({ email: 'test@example.com', password: '123' })
+    expect(res.status).toBe(400)
+    expect(res.body.error).toBe('INVALID_PASSWORD')
+  })
+
+  test('邮箱格式非法：返回 400 INVALID_EMAIL', async () => {
+    const res = await request(app)
+      .post('/api/v1/auth/register')
+      .send({ email: 'not-an-email', password: 'password123' })
+    expect(res.status).toBe(400)
+    expect(res.body.error).toBe('INVALID_EMAIL')
+  })
+
+  test('邮箱已注册且已验证：返回 409 EMAIL_ALREADY_EXISTS', async () => {
+    await createVerifiedUser('existing@example.com', 'password123')
+    const res = await request(app)
+      .post('/api/v1/auth/register')
+      .send({ email: 'existing@example.com', password: 'newpass123' })
+    expect(res.status).toBe(409)
+    expect(res.body.error).toBe('EMAIL_ALREADY_EXISTS')
+  })
+
+  test('发送频率限制：同一邮箱 1 分钟内只能发一次', async () => {
+    await request(app).post('/api/v1/auth/register')
+      .send({ email: 'rate@example.com', password: 'password123' })
+    const res = await request(app).post('/api/v1/auth/register')
+      .send({ email: 'rate@example.com', password: 'password123' })
+    expect(res.status).toBe(429)
+    expect(res.body.error).toBe('TOO_MANY_REQUESTS')
+  })
+})
+
+describe('POST /api/v1/auth/register/verify — 验证邮箱', () => {
+  test('验证码正确：注册完成，返回 JWT', async () => {
+    await request(app).post('/api/v1/auth/register')
+      .send({ email: 'verify@example.com', password: 'password123' })
+    const code = getTestOtp('verify@example.com')
+    const res = await request(app)
+      .post('/api/v1/auth/register/verify')
+      .send({ email: 'verify@example.com', code })
     expect(res.status).toBe(200)
     expect(res.body.token).toBeDefined()
   })
 
-  test('验证码错误：返回 401', async () => {
+  test('验证码错误：返回 401 INVALID_OTP', async () => {
     const res = await request(app)
-      .post('/api/v1/auth/email/verify')
-      .send({ email: 'test@example.com', code: '000000' })
+      .post('/api/v1/auth/register/verify')
+      .send({ email: 'verify@example.com', code: '000000' })
+    expect(res.status).toBe(401)
+    expect(res.body.error).toBe('INVALID_OTP')
+  })
+
+  test('验证码过期（5分钟后）：返回 401 OTP_EXPIRED', async () => {
+    await request(app).post('/api/v1/auth/register')
+      .send({ email: 'expired@example.com', password: 'password123' })
+    jest.advanceTimersByTime(6 * 60 * 1000)  // 推进 6 分钟
+    const code = getTestOtp('expired@example.com')
+    const res = await request(app)
+      .post('/api/v1/auth/register/verify')
+      .send({ email: 'expired@example.com', code })
+    expect(res.status).toBe(401)
+    expect(res.body.error).toBe('OTP_EXPIRED')
+  })
+
+  test('游客持 guest_token 注册：游戏记录与新账号合并', async () => {
+    const guestRes = await request(app).post('/api/v1/auth/guest')
+    const guestToken = guestRes.body.guest_token
+    // 游客开始一局游戏
+    await createTestGameSession(guestToken)
+
+    await request(app).post('/api/v1/auth/register')
+      .send({ email: 'merge@example.com', password: 'password123', guest_token: guestToken })
+    const code = getTestOtp('merge@example.com')
+    const res = await request(app)
+      .post('/api/v1/auth/register/verify')
+      .send({ email: 'merge@example.com', code, guest_token: guestToken })
+
+    expect(res.status).toBe(200)
+    // 验证游戏记录已合并到新账号
+    const profile = await authedRequest(res.body.token).get('/api/v1/profile/history')
+    expect(profile.body.data.length).toBeGreaterThan(0)
+  })
+})
+```
+
+#### 3.1.3 登录流程
+
+```typescript
+describe('POST /api/v1/auth/login — 登录', () => {
+  test('邮箱+密码正确：返回 JWT', async () => {
+    await createVerifiedUser('login@example.com', 'correctpass')
+    const res = await request(app)
+      .post('/api/v1/auth/login')
+      .send({ email: 'login@example.com', password: 'correctpass' })
+    expect(res.status).toBe(200)
+    expect(res.body.token).toBeDefined()
+  })
+
+  test('密码错误：返回 401（不区分邮箱/密码哪个错，防枚举）', async () => {
+    await createVerifiedUser('login2@example.com', 'correctpass')
+    const res = await request(app)
+      .post('/api/v1/auth/login')
+      .send({ email: 'login2@example.com', password: 'wrongpass' })
+    expect(res.status).toBe(401)
+    expect(res.body.error).toBe('INVALID_CREDENTIALS')
+    // 注意：不应说"密码错误"或"邮箱不存在"，统一模糊提示
+  })
+
+  test('邮箱不存在：同样返回 401 INVALID_CREDENTIALS（防止邮箱枚举）', async () => {
+    const res = await request(app)
+      .post('/api/v1/auth/login')
+      .send({ email: 'ghost@example.com', password: 'anypass' })
+    expect(res.status).toBe(401)
+    expect(res.body.error).toBe('INVALID_CREDENTIALS')
+  })
+
+  test('邮箱未验证：返回 403 EMAIL_NOT_VERIFIED', async () => {
+    await createUnverifiedUser('unverified@example.com', 'password123')
+    const res = await request(app)
+      .post('/api/v1/auth/login')
+      .send({ email: 'unverified@example.com', password: 'password123' })
+    expect(res.status).toBe(403)
+    expect(res.body.error).toBe('EMAIL_NOT_VERIFIED')
+  })
+
+  test('连续失败 5 次：第 6 次返回 429 ACCOUNT_LOCKED', async () => {
+    await createVerifiedUser('lockme@example.com', 'correctpass')
+    for (let i = 0; i < 5; i++) {
+      await request(app).post('/api/v1/auth/login')
+        .send({ email: 'lockme@example.com', password: 'wrongpass' })
+    }
+    const res = await request(app)
+      .post('/api/v1/auth/login')
+      .send({ email: 'lockme@example.com', password: 'correctpass' }) // 密码正确但账号已锁
+    expect(res.status).toBe(429)
+    expect(res.body.error).toBe('ACCOUNT_LOCKED')
+    expect(res.body.locked_until).toBeDefined()
+  })
+
+  test('锁定 15 分钟后恢复：正确密码可以登录', async () => {
+    await createVerifiedUser('unlock@example.com', 'correctpass')
+    for (let i = 0; i < 5; i++) {
+      await request(app).post('/api/v1/auth/login')
+        .send({ email: 'unlock@example.com', password: 'wrongpass' })
+    }
+    jest.advanceTimersByTime(16 * 60 * 1000)  // 推进 16 分钟
+    const res = await request(app)
+      .post('/api/v1/auth/login')
+      .send({ email: 'unlock@example.com', password: 'correctpass' })
+    expect(res.status).toBe(200)
+    expect(res.body.token).toBeDefined()
+  })
+})
+```
+
+#### 3.1.4 忘记密码 / 重置密码
+
+```typescript
+describe('POST /api/v1/auth/password/forgot — 忘记密码发送 OTP', () => {
+  test('已注册邮箱：发送 OTP，返回 200', async () => {
+    await createVerifiedUser('forgot@example.com', 'oldpass')
+    const res = await request(app)
+      .post('/api/v1/auth/password/forgot')
+      .send({ email: 'forgot@example.com' })
+    expect(res.status).toBe(200)
+    expect(res.body.message).toContain('验证码')
+  })
+
+  test('未注册邮箱：同样返回 200（防止邮箱枚举攻击）', async () => {
+    const res = await request(app)
+      .post('/api/v1/auth/password/forgot')
+      .send({ email: 'notexist@example.com' })
+    expect(res.status).toBe(200) // 不泄露邮箱是否存在
+  })
+})
+
+describe('POST /api/v1/auth/password/reset — 重置密码', () => {
+  test('OTP 正确 + 新密码合法：重置成功，返回 JWT', async () => {
+    await createVerifiedUser('reset@example.com', 'oldpass')
+    await request(app).post('/api/v1/auth/password/forgot')
+      .send({ email: 'reset@example.com' })
+    const code = getTestOtp('reset@example.com')
+    const res = await request(app)
+      .post('/api/v1/auth/password/reset')
+      .send({ email: 'reset@example.com', code, new_password: 'newpass123' })
+    expect(res.status).toBe(200)
+    expect(res.body.token).toBeDefined()
+  })
+
+  test('重置后旧密码失效，新密码可登录', async () => {
+    await createVerifiedUser('reset2@example.com', 'oldpass')
+    await request(app).post('/api/v1/auth/password/forgot')
+      .send({ email: 'reset2@example.com' })
+    const code = getTestOtp('reset2@example.com')
+    await request(app).post('/api/v1/auth/password/reset')
+      .send({ email: 'reset2@example.com', code, new_password: 'brandnewpass' })
+
+    // 旧密码失效
+    const failRes = await request(app).post('/api/v1/auth/login')
+      .send({ email: 'reset2@example.com', password: 'oldpass' })
+    expect(failRes.status).toBe(401)
+
+    // 新密码有效
+    const okRes = await request(app).post('/api/v1/auth/login')
+      .send({ email: 'reset2@example.com', password: 'brandnewpass' })
+    expect(okRes.status).toBe(200)
+  })
+
+  test('OTP 错误：返回 401 INVALID_OTP', async () => {
+    const res = await request(app)
+      .post('/api/v1/auth/password/reset')
+      .send({ email: 'reset@example.com', code: '000000', new_password: 'newpass123' })
+    expect(res.status).toBe(401)
+    expect(res.body.error).toBe('INVALID_OTP')
+  })
+
+  test('新密码少于 8 位：返回 400 INVALID_PASSWORD', async () => {
+    await createVerifiedUser('reset3@example.com', 'oldpass')
+    await request(app).post('/api/v1/auth/password/forgot')
+      .send({ email: 'reset3@example.com' })
+    const code = getTestOtp('reset3@example.com')
+    const res = await request(app)
+      .post('/api/v1/auth/password/reset')
+      .send({ email: 'reset3@example.com', code, new_password: '123' })
+    expect(res.status).toBe(400)
+    expect(res.body.error).toBe('INVALID_PASSWORD')
+  })
+})
+```
+
+#### 3.1.5 修改密码（已登录）
+
+```typescript
+describe('POST /api/v1/auth/password/change — 修改密码', () => {
+  test('当前密码正确 + 新密码合法：修改成功', async () => {
+    const user = await createVerifiedUser('change@example.com', 'oldpass')
+    const res = await authedRequest(user)
+      .post('/api/v1/auth/password/change')
+      .send({ current_password: 'oldpass', new_password: 'newpass123' })
+    expect(res.status).toBe(200)
+  })
+
+  test('当前密码错误：返回 401 INVALID_CREDENTIALS', async () => {
+    const user = await createVerifiedUser('change2@example.com', 'oldpass')
+    const res = await authedRequest(user)
+      .post('/api/v1/auth/password/change')
+      .send({ current_password: 'wrongpass', new_password: 'newpass123' })
+    expect(res.status).toBe(401)
+    expect(res.body.error).toBe('INVALID_CREDENTIALS')
+  })
+
+  test('未登录：返回 401 UNAUTHORIZED', async () => {
+    const res = await request(app)
+      .post('/api/v1/auth/password/change')
+      .send({ current_password: 'old', new_password: 'new12345' })
+    expect(res.status).toBe(401)
+  })
+})
+```
+
+#### 3.1.6 注销账号
+
+```typescript
+describe('DELETE /api/v1/auth/account — 注销账号', () => {
+  test('密码正确：账号软删除，返回 200', async () => {
+    const user = await createVerifiedUser('delete@example.com', 'mypassword')
+    const res = await authedRequest(user)
+      .delete('/api/v1/auth/account')
+      .send({ password: 'mypassword' })
+    expect(res.status).toBe(200)
+  })
+
+  test('账号软删除后：原邮箱无法立即重新注册', async () => {
+    const user = await createVerifiedUser('delete2@example.com', 'mypassword')
+    await authedRequest(user).delete('/api/v1/auth/account')
+      .send({ password: 'mypassword' })
+    const res = await request(app)
+      .post('/api/v1/auth/register')
+      .send({ email: 'delete2@example.com', password: 'newpass123' })
+    expect(res.status).toBe(409)
+    expect(res.body.error).toBe('EMAIL_ALREADY_EXISTS')
+  })
+
+  test('账号软删除后：已使用的兑换码不可被他人重新使用', async () => {
+    const user = await createVerifiedUser('delete3@example.com', 'mypassword')
+    const code = await createTestCode({ quota_value: 10 })
+    await authedRequest(user).post('/api/v1/redeem').send({ code })
+    await authedRequest(user).delete('/api/v1/auth/account')
+      .send({ password: 'mypassword' })
+
+    const otherUser = await createVerifiedUser('other@example.com', 'pass12345')
+    const res = await authedRequest(otherUser).post('/api/v1/redeem').send({ code })
+    expect(res.status).toBe(400)
+    expect(res.body.error).toBe('USED_CODE')
+  })
+
+  test('密码错误：返回 401，账号不删除', async () => {
+    const user = await createVerifiedUser('nodelete@example.com', 'mypassword')
+    const res = await authedRequest(user)
+      .delete('/api/v1/auth/account')
+      .send({ password: 'wrongpassword' })
+    expect(res.status).toBe(401)
+
+    // 账号仍然存在，仍可登录
+    const loginRes = await request(app).post('/api/v1/auth/login')
+      .send({ email: 'nodelete@example.com', password: 'mypassword' })
+    expect(loginRes.status).toBe(200)
+  })
+
+  test('未登录：返回 401 UNAUTHORIZED', async () => {
+    const res = await request(app)
+      .delete('/api/v1/auth/account')
+      .send({ password: 'any' })
     expect(res.status).toBe(401)
   })
 })

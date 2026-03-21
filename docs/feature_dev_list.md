@@ -4,6 +4,49 @@
 
 ---
 
+## [PLANNED] 认证系统 v2：邮箱+密码 + Gmail SMTP
+**日期：** 2026-03-21 | **状态：** ⏸️ 待实现（Phase 2 优先）
+
+**描述：** 将认证从"纯 OTP 无密码"升级为"邮箱+密码"体系，OTP 仅用于注册验证和忘记密码。同步将邮件服务从 Resend 换成 Gmail SMTP（免费，支持任意收件人）。
+
+**新增流程：**
+- 注册：邮箱+密码 → OTP 验证邮箱所有权 → 自动登录
+- 登录：邮箱+密码（无 OTP，瞬间完成）
+- 忘记密码：邮箱 OTP → 设新密码
+- 修改密码：当前密码+新密码（已登录）
+- 注销账号：密码确认 → 软删除（30天保留）
+
+**安全机制：**
+- 密码 bcrypt 哈希（cost factor 12）
+- 连续失败 5 次 → 锁定 15 分钟
+- 忘记密码接口不泄露邮箱是否存在
+- 软删除期间邮箱不可重新注册
+
+**数据库变更（新增字段）：**
+- `users.password_hash VARCHAR` — 密码 bcrypt 哈希，游客可为 null
+- `users.email_verified BOOLEAN DEFAULT false` — 邮箱是否已验证
+- `users.login_attempts INT DEFAULT 0` — 连续失败次数
+- `users.locked_until TIMESTAMP` — 锁定解除时间
+
+**新增 API 端点：**
+- `POST /auth/register` — 邮箱+密码，发送 OTP
+- `POST /auth/register/verify` — 验证 OTP，完成注册
+- `POST /auth/login` — 邮箱+密码登录
+- `POST /auth/password/forgot` — 发送重置 OTP
+- `POST /auth/password/reset` — OTP+新密码重置
+- `POST /auth/password/change` — 修改密码（已登录）
+- `DELETE /auth/account` — 注销账号
+
+**邮件服务：Gmail SMTP**
+- 配置：Gmail 账号 → 开启两步验证 → 生成应用专用密码
+- 环境变量：SMTP_HOST / SMTP_PORT / SMTP_USER / SMTP_PASS
+- 依赖：`nodemailer`（替换 Resend）
+- 费用：免费，~500 封/天
+
+**测试用例：** 已在 `docs/TESTING.md` 3.1 节全面覆盖（注册/登录/忘记密码/修改密码/注销/边界情况共 18 个测试用例）
+
+---
+
 ## [DONE] BUG-005 修复：邮箱登录 500 — mergeGuestQuota FK 约束
 **日期：** 2026-03-21 | **状态：** ✅ 完成
 
