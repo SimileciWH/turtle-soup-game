@@ -2,6 +2,31 @@
 
 ---
 
+## [OPEN] BUG-014 — 游客局数未合并到注册账户
+
+**日期：** 2026-03-22
+**严重级别：** High
+**状态：** 🔴 OPEN
+
+**现象：**
+游客消耗 2 局（quotaFree: 3→1）后点「登录/注册」完成注册，个人中心显示「免费局数 3 / 付费局数 0」，没有继承游客剩余的 1 局，应显示「免费局数 1 / 付费局数 0」。用户的游戏进度（已用局数）在注册时被静默丢弃，形成虚假的局数增加感。
+
+**根因：**
+两个可能根因（需代码确认）：
+1. `mergeGuestQuota` 在复制 `quotaFree/quotaPaid` 时未同步复制 `quotaResetAt`，导致新注册用户的 `quotaResetAt` 为 null 或旧日期 → `getQuota()` 中 `resetDate !== today` → 返回默认值 3 而非实际值 1
+2. 或 `verifyRegistration` 流程中 guest token 在合并前已被清除，导致 `mergeGuestQuota` 找不到对应 guest 用户而跳过合并
+
+**涉及文件：**
+- `backend/src/services/authService.ts` — `verifyRegistration()` → `mergeGuestQuota()` 调用链
+- `backend/src/services/quotaService.ts` — `getQuota()` 的 `resetDate` 判断逻辑
+
+**修复步骤：**
+1. 确认 `mergeGuestQuota` 是否复制了 `quotaResetAt` 字段（若无，补上）
+2. 确认 `verifyRegistration` 中 guest token 传递是否完整（前端注册时需携带 `hgt_guest_token`）
+3. 加 `quotaResetAt` 字段的单元测试覆盖
+
+---
+
 ## [OPEN] BUG-013 — 返回大厅后局数 badge 不刷新
 
 **日期：** 2026-03-22
