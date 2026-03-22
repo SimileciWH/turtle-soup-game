@@ -39,6 +39,44 @@
 
 ---
 
+## [PENDING] IMP-003 — 注销账号增加邮箱 + 验证码二次确认
+
+**日期：** 2026-03-22
+**优先级：** Medium
+**状态：** 🔵 PENDING
+
+**现状：**
+注销账号弹窗仅要求输入当前密码一项验证即可确认删除，安全性不足。
+
+**优化方案：**
+弹窗内合并为单页 3 项验证，全部在一个弹窗内完成：
+
+```
+确认注销账号？
+以下内容将被清除：...
+
+[ 邮箱地址（只读/预填）  ] [发送验证码]  ← 点击后60s倒计时
+[ 6位验证码              ]
+[ 当前密码               ]
+
+      [ 取消 ]  [ 确认注销 ]              ← 3项全填才激活「确认注销」
+```
+
+**交互细节：**
+- 邮箱字段预填当前登录邮箱，只读不可编辑
+- 「发送验证码」调用现有 `POST /api/v1/auth/password/forgot`（复用重置密码的 OTP 流程），60s 倒计时
+- 「确认注销」按钮：3 项全填才激活，点击调用现有 `DELETE /api/v1/auth/account`（同时后端用 OTP + 密码双重验证）
+- 后端 `deleteAccount` 需新增 OTP 验证步骤
+
+**后端影响：** 需小改 `authService.ts` 的 `deleteAccount()`，在密码校验前增加 `verifyOtp()` 校验；路由入参增加 `code` 字段。
+
+**涉及文件：**
+- `frontend/src/pages/Profile.tsx` — 注销弹窗 UI 和状态逻辑
+- `backend/src/services/authService.ts` — `deleteAccount()` 增加 OTP 验证
+- `backend/src/routes/profile.ts` — 路由入参增加 `code`
+
+---
+
 ## [PENDING] IMP-002 — 找回密码页面单页化（合并邮箱、发送验证码、验证码输入、新密码）
 
 **日期：** 2026-03-22
