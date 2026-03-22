@@ -4,7 +4,7 @@ import * as puzzleService from '../services/puzzleService'
 export async function handleList(req: Request, res: Response): Promise<void> {
   const difficulty = String(req.query['difficulty'] ?? 'all')
   const page = Math.max(1, parseInt(String(req.query['page'] ?? '1'), 10))
-  const limit = Math.min(50, Math.max(1, parseInt(String(req.query['limit'] ?? '20'), 10)))
+  const limit = Math.min(200, Math.max(1, parseInt(String(req.query['limit'] ?? '100'), 10)))
 
   const { puzzles, total } = await puzzleService.listPuzzles(difficulty, page, limit)
   res.json({ puzzles, total, page, limit })
