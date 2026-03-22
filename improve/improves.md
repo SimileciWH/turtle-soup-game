@@ -2,6 +2,38 @@
 
 ---
 
+## [PENDING] IMP-012 — AI 输出二层严格过滤
+
+**日期：** 2026-03-22
+**优先级：** High
+**状态：** 🔵 PENDING
+
+**现状：**
+AI 输出目前只通过 prompt 约束返回 是/否/无关，但没有代码层面的二次校验。如果 AI 输出超出预期范围（如解释性语句、额外说明），内容会原样透传给前端，可能泄露答案线索或破坏游戏体验。
+
+**优化方案：**
+在 AI 响应处理层（SSE 流式输出 + 最终结果）加第二层过滤，严格只允许输出 `是` / `否` / `无关`，其他所有内容截断或替换为 `无关`：
+
+```typescript
+function sanitizeAIResponse(raw: string): string {
+  const normalized = raw.trim()
+  if (['是', '否', '无关'].includes(normalized)) return normalized
+  // 尝试提取第一个匹配词
+  const match = normalized.match(/^(是|否|无关)/)
+  if (match) return match[1]
+  // 兜底：任何不符合格式的内容都返回"无关"
+  return '无关'
+}
+```
+
+**后端影响：** 修改 `aiService.ts` 的响应处理逻辑，SSE 流式输出收集完整响应后经过 sanitizeAIResponse 再发送给前端
+
+**涉及文件：**
+- `backend/src/services/aiService.ts` — 响应 sanitize 逻辑
+- `backend/src/controllers/gameController.ts` — SSE 输出点
+
+---
+
 ## [PENDING] IMP-011 — 游戏记录折叠聊天内容
 
 **日期：** 2026-03-22
