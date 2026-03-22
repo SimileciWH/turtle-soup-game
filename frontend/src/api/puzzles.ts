@@ -6,8 +6,9 @@ export function listPuzzles(difficulty: string, page = 1, limit = 100) {
   return api.get<PuzzleListResponse>(`/puzzles?${params}`)
 }
 
-export function getDailyPuzzle() {
-  return api.get<Puzzle>('/puzzles/daily')
+export async function getDailyPuzzle(): Promise<Puzzle> {
+  const res = await api.get<{ puzzle: Puzzle }>('/puzzles/daily')
+  return res.puzzle
 }
 
 export function ratePuzzle(puzzleId: number, rating: number, comment?: string) {
