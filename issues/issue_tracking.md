@@ -163,11 +163,11 @@ Railway 后端 Variables 缺少 `RESEND_FROM=noreply@ai-smilion.tech`（BUG-007 
 
 ---
 
-## [IN_PROGRESS] BUG-007 — Railway 封锁出站 SMTP 端口，注册/找回密码 OTP 邮件无法发送
+## [FIXED] BUG-007 — Railway 封锁出站 SMTP 端口，注册/找回密码 OTP 邮件无法发送
 
 **日期：** 2026-03-21
 **严重级别：** High
-**状态：** 🔄 IN PROGRESS — OTP 代码已恢复，等待 Resend 域名验证 + Railway 环境变量更新
+**状态：** ✅ FIXED（2026-03-22）
 
 **域名：** `ai-smilion.tech`（2026-03-21 购买，命名审核已通过）
 
@@ -267,8 +267,8 @@ Railway 后端 Variables 缺少 `RESEND_FROM=noreply@ai-smilion.tech`（BUG-007 
 
 ---
 
-## [BUG-004] 邮箱验证码发送失败 — Resend 未验证域名
-**发现时间：** 2026-03-21 | **状态：** 🔴 待修复 | **严重级别：** 高
+## [FIXED] BUG-004 — 邮箱验证码发送失败（Resend 未验证域名）
+**发现时间：** 2026-03-21 | **状态：** ✅ FIXED（2026-03-22） | **严重级别：** 高
 
 **现象：**
 点击「发送验证码」后前端提示"验证码邮件发送失败"，后端返回 503 EMAIL_SEND_FAILED。
