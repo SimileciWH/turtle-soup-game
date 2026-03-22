@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
+import html2canvas from 'html2canvas'
 import { ShareCard } from '../components/result/ShareCard'
 import { getResult, getMessages } from '../api/games'
 import { ratePuzzle } from '../api/puzzles'
@@ -18,6 +19,7 @@ export function Result() {
   const [error, setError] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
   const [showHistory, setShowHistory] = useState(false)
+  const [savingImage, setSavingImage] = useState(false)
   const [myRating, setMyRating] = useState(0)
   const [ratingComment, setRatingComment] = useState('')
   const [ratingSubmitted, setRatingSubmitted] = useState(false)
@@ -30,6 +32,28 @@ export function Result() {
       .catch(e => setError(e instanceof Error ? e.message : '加载失败'))
       .finally(() => setLoading(false))
   }, [id])
+
+  async function handleSaveImage() {
+    const el = document.getElementById('share-card')
+    if (!el || savingImage) return
+    setSavingImage(true)
+    try {
+      const canvas = await html2canvas(el, { scale: 2, useCORS: false, backgroundColor: '#FDF6E3' })
+      canvas.toBlob(async blob => {
+        if (!blob) return
+        const file = new File([blob], `海龟汤-${result?.puzzle_title ?? '战绩'}.png`, { type: 'image/png' })
+        if (navigator.canShare?.({ files: [file] })) {
+          await navigator.share({ files: [file], title: '海龟汤像素馆战绩' })
+        } else {
+          const url = URL.createObjectURL(blob)
+          const a = document.createElement('a')
+          a.href = url; a.download = file.name; a.click()
+          URL.revokeObjectURL(url)
+        }
+      }, 'image/png')
+    } catch { /* ignore */ }
+    finally { setSavingImage(false) }
+  }
 
   async function handleRate(star: number) {
     if (!result || ratingLoading) return
@@ -135,12 +159,20 @@ export function Result() {
         />
 
         {/* Action buttons */}
-        <div className="flex gap-3">
+        <div className="flex gap-2">
           <button
             onClick={handleShare}
             className="flex-1 py-2.5 bg-ocean text-white rounded-xl text-sm font-medium hover:bg-ocean/80 transition-colors"
           >
-            {copied ? '✅ 已复制' : '📋 复制分享文字'}
+            {copied ? '✅ 已复制' : '📋 复制'}
+          </button>
+          <button
+            onClick={handleSaveImage}
+            disabled={savingImage}
+            className="flex-1 py-2.5 bg-sand/60 text-warm-brown rounded-xl text-sm font-medium
+                       hover:bg-sand/80 disabled:opacity-50 transition-colors"
+          >
+            {savingImage ? '生成中…' : '📷 保存图片'}
           </button>
           <button
             onClick={() => navigate('/')}

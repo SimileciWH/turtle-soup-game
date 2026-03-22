@@ -4,6 +4,64 @@
 
 ---
 
+## [DONE] Phase 2 — 分享卡片图片导出（2-6）
+**日期：** 2026-03-22 | **状态：** ✅ 完成
+
+- `frontend/src/pages/Result.tsx`：新增"📷 保存图片"按钮，使用 html2canvas 将 `#share-card` DOM 渲染为 PNG（scale:2 retina 质量）
+- 移动端（支持 Web Share API）：弹出系统分享面板可直接保存到相册
+- 桌面端：自动触发文件下载（文件名包含题目名称）
+- 字体 fallback：html2canvas 无法加载 Google Fonts，文字以系统字体渲染，不影响内容可读性
+
+---
+
+## [DONE] Phase 2 — 超 40 轮对话压缩（2-2）
+**日期：** 2026-03-22 | **状态：** ✅ 完成
+
+- `backend/src/services/aiService.ts`：新增 `compressHistory()` 函数，保留最近 40 轮（80 条消息），超出部分截断
+- 无额外 API 调用，无延迟，纯客户端滑动窗口，每局 Token 上限约 6500（60×60 + system prompt）
+
+---
+
+## [DONE] Phase 2 — 游戏记录折叠聊天内容 IMP-011（2-5）
+**日期：** 2026-03-22 | **状态：** ✅ 完成
+
+- `backend/src/routes/profile.ts`：新增 `GET /profile/games/:id/messages`
+- `backend/src/controllers/profileController.ts`：`handleSessionMessages` — 校验归属权，返回 role + content + seq
+- `backend/src/services/profileService.ts`：`getSessionMessages()` — 严格按 seq 排序，不含 answer/facts/hints
+- `frontend/src/pages/Profile.tsx`：`HistoryRow` 组件，点击「对话」按钮展开聊天气泡时间线（懒加载）
+- 同步修正 `HistorySession` 类型（`session_id`/`puzzle_difficulty` 字段名对齐后端）
+
+---
+
+## [DONE] Phase 2 — 题目评分与反馈（2-3）
+**日期：** 2026-03-22 | **状态：** ✅ 完成
+
+- `backend/prisma/schema.prisma`：新增 `PuzzleRating` 表（puzzleId+userId 唯一约束）、Puzzle 增加 `avgRating`/`ratingCount` 字段
+- `backend/prisma/migrations/20260322120000_add_puzzle_ratings/migration.sql`：生产迁移 SQL
+- `backend/src/services/puzzleService.ts`：`ratePuzzle()` 事务（upsert + 重新聚合均值）、`getMyRating()`
+- `backend/src/routes/puzzles.ts`：`POST /puzzles/:id/rate`（需登录）
+- `frontend/src/pages/Result.tsx`：`RatingBlock` 组件 — 5 星评分 + 选填短评；游客提示注册（不强制拦截）
+- 评分后即时反馈「感谢你的评价！」
+
+---
+
+## [DONE] Phase 2 — 个人统计数据（2-4）
+**日期：** 2026-03-22 | **状态：** ✅ 完成
+
+- `backend/src/services/profileService.ts`：`getStats()` — 聚合总局数/通关数/通关率/平均提问/累计提示/累计时间/常玩难度
+- `backend/src/routes/profile.ts`：新增 `GET /profile/stats`
+- `frontend/src/pages/Profile.tsx`：`StatsCard` 组件，6 格统计网格（仅有对局记录时显示）
+- `frontend/src/api/profile.ts`：新增 `getStats()`
+
+---
+
+## [DONE] Phase 2 — 每日新题 date-hash 自动轮换（2-1）
+**日期：** 2026-03-22 | **状态：** ✅ 完成
+
+- `backend/src/services/puzzleService.ts`：`getDailyPuzzle()` 改为按 `dayNumber % total` 动态选题，每天自动切换，无需后台操作，无需修改 `isDaily` 字段
+
+---
+
 ## [DONE] P2：每日推荐题置顶
 **日期：** 2026-03-21 | **状态：** ✅ 完成
 
