@@ -2,6 +2,81 @@
 
 ---
 
+## [PENDING] IMP-007 — E2E 测试：补全 Playwright 测试文件并加入 CI
+
+**日期：** 2026-03-22
+**优先级：** Low
+**状态：** 🔵 PENDING
+
+**现状：** E2E 测试目录和测试文件完全不存在，CI 也没有 E2E job。
+
+**需要做的事：**
+1. 创建 `e2e/` 目录及 `playwright.config.ts`
+2. 编写 `e2e/game-flow.spec.ts`（完整游戏流程）和 `e2e/hint-flow.spec.ts`（提示系统），内容参考 `docs/TESTING.md` 第 5 章
+3. 在 `ci.yml` 补充 `e2e-test` job（仅 main 分支触发，needs: [backend-test, frontend-test]）
+
+**涉及文件：**
+- `e2e/playwright.config.ts`（新建）
+- `e2e/game-flow.spec.ts`（新建）
+- `e2e/hint-flow.spec.ts`（新建）
+- `.github/workflows/ci.yml`（新增 e2e-test job）
+
+---
+
+## [PENDING] IMP-006 — 前端组件测试：补全 Vitest 测试文件并加入 CI
+
+**日期：** 2026-03-22
+**优先级：** Medium
+**状态：** 🔵 PENDING
+
+**现状：** 前端无任何组件测试文件，CI 的 `frontend-build` job 只做 TypeScript 编译 + 构建，不跑任何测试。
+
+**需要做的事：**
+1. 创建 `frontend/src/__tests__/` 目录
+2. 编写组件测试：`QuotaBadge.test.tsx`、`InputBar.test.tsx`、`ProgressBar.test.tsx`，内容参考 `docs/TESTING.md` 第 4 章
+3. 配置 `frontend/vitest.config.ts`
+4. 将 CI 的 `frontend-build` job 改名为 `frontend-test`，新增 `npm run test -- --coverage` 步骤
+
+**涉及文件：**
+- `frontend/src/__tests__/` 下多个测试文件（新建）
+- `frontend/vitest.config.ts`（新建或更新）
+- `.github/workflows/ci.yml`（frontend job 增加测试步骤）
+
+---
+
+## [PENDING] IMP-005 — 后端 CI 完善：PostgreSQL 服务 + 集成测试 + 覆盖率
+
+**日期：** 2026-03-22
+**优先级：** High
+**状态：** 🔵 PENDING
+
+**现状：** 实际 `ci.yml` 的 `backend-test` job 与 TESTING.md 规范差距较大：
+
+| 差距项 | TESTING.md 要求 | 当前实际 |
+|--------|----------------|---------|
+| PostgreSQL | postgres:16 服务容器 | placeholder URL（无真实 DB） |
+| DB 迁移 | `npm run db:migrate` | 缺失 |
+| 单元测试 | `npm run test:unit --coverage` | `npm test`（无 coverage） |
+| 集成测试 | `npm run test:integration` | 无 |
+| 覆盖率上传 | Codecov action | 缺失 |
+| 测试目录结构 | `unit/` + `integration/` 子目录 | flat 结构（5 个文件混放） |
+
+**需要做的事：**
+1. `ci.yml` 的 `backend-test` job 新增 postgres:16 服务容器
+2. 新增 `npm run db:migrate` 步骤
+3. 拆分 `npm run test:unit` 和 `npm run test:integration` 两个步骤并加 `--coverage`
+4. 新增 `codecov/codecov-action` 覆盖率上传
+5. 将现有 5 个测试文件整理到 `unit/` + `integration/` 子目录，更新 `jest.config.ts` 对应路径
+6. `package.json` 新增 `test:unit` 和 `test:integration` 两个 npm script
+
+**涉及文件：**
+- `.github/workflows/ci.yml`
+- `backend/package.json`
+- `backend/jest.config.ts`
+- `backend/src/__tests__/` 目录重组
+
+---
+
 ## [PENDING] IMP-004 — 登录时检测未注册邮箱并引导注册
 
 **日期：** 2026-03-22
