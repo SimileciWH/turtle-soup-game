@@ -2,6 +2,26 @@
 
 ---
 
+## [FIXED] BUG-015 — 每日推荐卡片不显示谜题标题和摘要
+
+**日期：** 2026-03-22
+**严重级别：** Medium
+**状态：** ✅ FIXED（2026-03-22，commit 7a9ea92）
+
+**现象：**
+大厅页面的每日推荐卡片显示"每日推荐"标签和"开始挑战"按钮，但谜题标题和摘要为空白，且点击开始挑战无法正确关联谜题ID。
+
+**根因：**
+`getDailyPuzzle()` 声明返回类型为 `Puzzle`，但后端 `/api/v1/puzzles/daily` 实际返回 `{puzzle: Puzzle}`。前端未解构包装层，导致 `dailyPuzzle.title` 为 `undefined`。
+
+**涉及文件：**
+- `frontend/src/api/puzzles.ts` — `getDailyPuzzle()` 类型声明错误，返回类型应为 `{puzzle: Puzzle}` 并在函数内解构
+
+**修复步骤：**
+将 `getDailyPuzzle()` 改为 `async`，调用后解构 `res.puzzle` 再返回。
+
+---
+
 ## [FIXED] BUG-014 — 游客局数未合并到注册账户
 
 **日期：** 2026-03-22
