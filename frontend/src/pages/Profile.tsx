@@ -1,7 +1,7 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../store/authStore'
-import { getProfile, redeemCode, changePassword, deleteAccount } from '../api/auth'
+import { getProfile, redeemCode, changePassword, deleteAccount, sendDeleteOtp } from '../api/auth'
 import { getHistory } from '../api/profile'
 import type { HistoryResponse } from '../types/api'
 
@@ -28,12 +28,19 @@ function initChangePwd(): ChangePwdState {
 interface DeleteState {
   open: boolean
   password: string
+  code: string
+  otpSent: boolean
+  sendingOtp: boolean
+  countdown: number
   loading: boolean
   error: string | null
 }
 
 function initDelete(): DeleteState {
-  return { open: false, password: '', loading: false, error: null }
+  return {
+    open: false, password: '', code: '', otpSent: false,
+    sendingOtp: false, countdown: 0, loading: false, error: null
+  }
 }
 
 // ── Main Component ────────────────────────────────────────
@@ -48,6 +55,7 @@ export function Profile() {
   const [redeemLoading, setRedeemLoading] = useState(false)
   const [pwd, setPwd] = useState<ChangePwdState>(initChangePwd)
   const [del, setDel] = useState<DeleteState>(initDelete)
+  const delTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   useEffect(() => {
     if (isGuest) { navigate('/auth'); return }
@@ -94,10 +102,26 @@ export function Profile() {
     }
   }
 
+  async function handleSendDeleteOtp() {
+    setDel(s => ({ ...s, sendingOtp: true, error: null }))
+    try {
+      await sendDeleteOtp()
+      setDel(s => ({ ...s, otpSent: true, sendingOtp: false, countdown: 60 }))
+      delTimerRef.current = setInterval(() => {
+        setDel(s => {
+          if (s.countdown <= 1) { clearInterval(delTimerRef.current!); return { ...s, countdown: 0 } }
+          return { ...s, countdown: s.countdown - 1 }
+        })
+      }, 1000)
+    } catch (e) {
+      setDel(s => ({ ...s, sendingOtp: false, error: e instanceof Error ? e.message : '发送失败' }))
+    }
+  }
+
   async function handleDeleteAccount() {
     setDel(s => ({ ...s, loading: true, error: null }))
     try {
-      await deleteAccount(del.password)
+      await deleteAccount(del.password, del.code || undefined)
       logout()
       navigate('/')
     } catch (e) {
@@ -133,6 +157,7 @@ export function Profile() {
         <DeleteModal
           del={del} setDel={setDel}
           onConfirm={handleDeleteAccount}
+          onSendOtp={handleSendDeleteOtp}
         />
       )}
     </div>
@@ -295,12 +320,15 @@ function DangerZone({ onDeleteClick }: { onDeleteClick: () => void }) {
 }
 
 function DeleteModal({
-  del, setDel, onConfirm
+  del, setDel, onConfirm, onSendOtp
 }: {
   del: DeleteState
   setDel: React.Dispatch<React.SetStateAction<DeleteState>>
   onConfirm: () => void
+  onSendOtp: () => void
 }) {
+  const inputCls = `w-full px-3 py-2 rounded-xl border border-sand/60 bg-warm-white text-sm
+    focus:outline-none focus:border-coral mb-3`
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 px-4">
       <div className="w-full max-w-sm bg-white rounded-2xl p-6 shadow-xl">
@@ -312,14 +340,40 @@ function DeleteModal({
           <li>已兑换的局数</li>
         </ul>
         <p className="text-xs text-warm-mid mb-4">数据保留 30 天，如需恢复请联系管理员。</p>
+
         <input
           type="password"
-          placeholder="输入当前密码以确认"
+          placeholder="输入当前密码"
           value={del.password}
           onChange={e => setDel(s => ({ ...s, password: e.target.value }))}
-          className="w-full px-3 py-2 rounded-xl border border-sand/60 bg-warm-white text-sm
-                     focus:outline-none focus:border-coral mb-3"
+          className={inputCls}
         />
+
+        {/* OTP row */}
+        <div className="flex gap-2 mb-3">
+          <input
+            type="text"
+            placeholder="输入邮箱验证码"
+            value={del.code}
+            onChange={e => setDel(s => ({ ...s, code: e.target.value.replace(/\D/g, '') }))}
+            maxLength={6}
+            className="flex-1 px-3 py-2 rounded-xl border border-sand/60 bg-warm-white text-sm
+              focus:outline-none focus:border-coral text-center tracking-widest"
+          />
+          <button
+            onClick={onSendOtp}
+            disabled={del.sendingOtp || del.countdown > 0 || !del.password}
+            className="px-3 py-2 text-xs bg-ocean text-white rounded-lg font-medium
+              disabled:opacity-50 hover:bg-ocean/80 shrink-0"
+          >
+            {del.countdown > 0 ? `${del.countdown}s` : del.sendingOtp ? '发送中' : '获取验证码'}
+          </button>
+        </div>
+
+        {del.otpSent && (
+          <p className="text-xs text-green-600 text-center mb-2">验证码已发送至您的邮箱</p>
+        )}
+
         {del.error && (
           <div className="text-coral text-sm text-center mb-3">{del.error}</div>
         )}
@@ -332,7 +386,7 @@ function DeleteModal({
           </button>
           <button
             onClick={onConfirm}
-            disabled={del.loading || !del.password}
+            disabled={del.loading || !del.password || del.code.length < 6}
             className="flex-1 py-2 bg-coral text-white rounded-xl text-sm disabled:opacity-50 hover:bg-coral/80"
           >
             {del.loading ? '注销中…' : '确认注销'}

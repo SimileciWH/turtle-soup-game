@@ -91,13 +91,19 @@ export async function handleChangePassword(req: Request, res: Response): Promise
 
 // ── Delete Account ────────────────────────────────────────
 
+export async function handleSendDeleteOtp(req: Request, res: Response): Promise<void> {
+  if (!req.user) throw Errors.UNAUTHORIZED()
+  await authService.sendDeleteOtp(BigInt(req.user.sub))
+  res.json({ sent: true })
+}
+
 export async function handleDeleteAccount(req: Request, res: Response): Promise<void> {
   if (!req.user) throw Errors.UNAUTHORIZED()
 
-  const { password } = req.body as { password?: string }
+  const { password, code } = req.body as { password?: string; code?: string }
   if (!password) throw Errors.INVALID_INPUT('缺少 password')
 
-  await authService.deleteAccount(BigInt(req.user.sub), password)
+  await authService.deleteAccount(BigInt(req.user.sub), password, code)
   res.json({ message: '账号已注销' })
 }
 

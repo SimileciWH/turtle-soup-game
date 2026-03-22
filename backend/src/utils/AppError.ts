@@ -17,6 +17,7 @@ export const Errors = {
   BLOCKED_INPUT:          () => new AppError('BLOCKED_INPUT', '输入内容不合规', 400),
   UNAUTHORIZED:           () => new AppError('UNAUTHORIZED', '未登录或 token 失效', 401),
   INVALID_CREDENTIALS:    () => new AppError('INVALID_CREDENTIALS', '邮箱或密码错误', 401),
+  EMAIL_NOT_FOUND:        () => new AppError('EMAIL_NOT_FOUND', '该邮箱尚未注册', 404),
   INVALID_OTP:            () => new AppError('INVALID_OTP', '验证码错误或已过期', 401),
   EMAIL_NOT_VERIFIED:     () => new AppError('EMAIL_NOT_VERIFIED', '邮箱尚未验证，请查收验证码邮件', 403),
   PASSWORD_NOT_SET:       () => new AppError('PASSWORD_NOT_SET', '该账号尚未设置密码，请使用忘记密码功能设置', 403),

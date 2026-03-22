@@ -33,9 +33,9 @@ jobs:
         working-directory: backend
         run: npx tsc --noEmit
 
-      - name: 运行单元测试
+      - name: 运行单元测试（含覆盖率）
         working-directory: backend
-        run: npm test
+        run: npm run test:coverage
         env:
           NODE_ENV: test
           DATABASE_URL: postgresql://placeholder:placeholder@localhost:5432/test
@@ -43,6 +43,13 @@ jobs:
           OPENAI_BASE_URL: mock
           OPENAI_API_KEY: mock
           RESEND_API_KEY: mock
+
+      - name: 上传覆盖率报告
+        uses: codecov/codecov-action@v4
+        with:
+          directory: backend/coverage
+          flags: backend
+          fail_ci_if_error: false
 
   # ─── 前端构建检查 ──────────────────────────
   frontend-build:
@@ -65,6 +72,10 @@ jobs:
       - name: TypeScript 编译检查
         working-directory: frontend
         run: npx tsc --noEmit
+
+      - name: 运行前端单元测试
+        working-directory: frontend
+        run: npm test
 
       - name: 构建前端
         working-directory: frontend

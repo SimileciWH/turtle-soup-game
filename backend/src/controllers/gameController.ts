@@ -94,7 +94,8 @@ export async function handleAsk(req: Request, res: Response): Promise<void> {
     return
   }
 
-  await gameService.addMessage(sessionId, 'ASSISTANT', fullReply)
+  const sanitized = aiService.sanitizeAIResponse(fullReply)
+  await gameService.addMessage(sessionId, 'ASSISTANT', sanitized)
   const newCount = await gameService.incrementQuestionCount(sessionId)
 
   res.write(`data: ${JSON.stringify({
@@ -150,12 +151,13 @@ export async function handleAnswer(req: Request, res: Response): Promise<void> {
     throw Errors.AI_UNAVAILABLE()
   }
 
-  const correct = fullReply.includes('恭喜你推理正确')
+  const sanitizedReply = aiService.sanitizeAIResponse(fullReply)
+  const correct = sanitizedReply.includes('恭喜你推理正确')
   if (correct) {
     await gameService.endSession(sessionId, 'WON')
-    res.json({ correct: true, message: fullReply, full_answer: puzzle.answer })
+    res.json({ correct: true, message: sanitizedReply, full_answer: puzzle.answer })
   } else {
-    res.json({ correct: false, message: fullReply })
+    res.json({ correct: false, message: sanitizedReply })
   }
 }
 

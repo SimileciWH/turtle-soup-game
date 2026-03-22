@@ -44,8 +44,12 @@ export function changePassword(currentPassword: string, newPassword: string) {
   })
 }
 
-export function deleteAccount(password: string) {
-  return api.delete<{ message: string }>('/auth/account', { password })
+export function sendDeleteOtp() {
+  return api.post<{ sent: boolean }>('/auth/account/delete-otp', {})
+}
+
+export function deleteAccount(password: string, code?: string) {
+  return api.delete<{ message: string }>('/auth/account', { password, code })
 }
 
 export function getProfile() {

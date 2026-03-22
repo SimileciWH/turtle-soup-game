@@ -18,7 +18,8 @@ const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 // OTP key namespaces to avoid collisions between register and reset flows
 const OTP_KEY = {
   register: (email: string) => `register:${email.toLowerCase()}`,
-  reset: (email: string) => `reset:${email.toLowerCase()}`
+  reset: (email: string) => `reset:${email.toLowerCase()}`,
+  delete: (email: string) => `delete:${email.toLowerCase()}`
 }
 
 // ── Guest ────────────────────────────────────────────────
@@ -105,7 +106,7 @@ export async function login(
   const dummyHash = '$2b$12$invalidhashpadding000000000000000000000000000000000000000'
   if (!user || user.deletedAt) {
     await bcrypt.compare(password, dummyHash)
-    throw Errors.INVALID_CREDENTIALS()
+    throw Errors.EMAIL_NOT_FOUND()
   }
 
   if (user.lockedUntil && user.lockedUntil > new Date()) {
@@ -200,11 +201,38 @@ export async function changePassword(
   await prisma.user.update({ where: { id: userId }, data: { passwordHash } })
 }
 
-// ── Delete Account (soft delete) ─────────────────────────
+// ── Delete Account — Step 1: send OTP ────────────────────
 
-export async function deleteAccount(userId: bigint, password: string): Promise<void> {
+export async function sendDeleteOtp(userId: bigint): Promise<void> {
+  const user = await prisma.user.findUnique({ where: { id: userId } })
+  if (!user || !user.email || user.deletedAt) throw Errors.UNAUTHORIZED()
+
+  const code = generateOtpCode()
+  saveOtp(OTP_KEY.delete(user.email), code)
+
+  try {
+    await sendOtpEmail(user.email, code, '海龟汤像素馆 — 注销账号验证码')
+  } catch (err) {
+    const detail = err instanceof Error ? err.message : String(err)
+    throw Errors.EMAIL_SEND_FAILED(detail)
+  }
+}
+
+// ── Delete Account — Step 2: verify OTP + password ───────
+
+export async function deleteAccount(
+  userId: bigint,
+  password: string,
+  code?: string
+): Promise<void> {
   const user = await prisma.user.findUnique({ where: { id: userId } })
   if (!user || !user.passwordHash) throw Errors.INVALID_CREDENTIALS()
+
+  // OTP double verification when code is provided
+  if (code !== undefined) {
+    if (!user.email) throw Errors.INVALID_CREDENTIALS()
+    if (!verifyOtp(OTP_KEY.delete(user.email), code)) throw Errors.INVALID_OTP()
+  }
 
   const valid = await bcrypt.compare(password, user.passwordHash)
   if (!valid) throw Errors.INVALID_CREDENTIALS()

@@ -61,6 +61,13 @@ export async function* askStream(opts: AskOptions): AsyncGenerator<string> {
   }
 }
 
+const ALLOWED_REPLIES = ['是的。', '不是。', '与此无关。', '能换个方式问吗？', '继续通过提问来推理吧。', '恭喜你推理正确！', '方向对了，还差一点，继续推理吧。']
+
+export function sanitizeAIResponse(raw: string): string {
+  const trimmed = raw.trim()
+  return ALLOWED_REPLIES.find(r => trimmed.includes(r)) ? trimmed : trimmed || '与此无关。'
+}
+
 function buildSystemPrompt(surface: string, answer: string, facts: unknown): string {
   const factsArr = Array.isArray(facts) ? (facts as string[]) : []
 

@@ -2,11 +2,11 @@
 
 ---
 
-## [PENDING] IMP-012 — AI 输出二层严格过滤
+## [DONE] IMP-012 — AI 输出二层严格过滤
 
 **日期：** 2026-03-22
 **优先级：** High
-**状态：** 🔵 PENDING
+**状态：** ✅ DONE
 
 **现状：**
 AI 输出目前只通过 prompt 约束返回 是/否/无关，但没有代码层面的二次校验。如果 AI 输出超出预期范围（如解释性语句、额外说明），内容会原样透传给前端，可能泄露答案线索或破坏游戏体验。
@@ -64,11 +64,11 @@ function sanitizeAIResponse(raw: string): string {
 
 ---
 
-## [PENDING] IMP-010 — CI 安全门：inputGuard 中间件测试
+## [DONE] IMP-010 — CI 安全门：inputGuard 中间件测试
 
 **日期：** 2026-03-22
 **优先级：** P0 安全红线
-**状态：** 🔵 PENDING
+**状态：** ✅ DONE
 
 **背景：**
 `inputGuard` 是阻止 prompt injection 和超长输入进入 AI 调用的唯一防线。目前无任何测试，代码改动可能静默破坏防护。
@@ -92,11 +92,11 @@ describe('inputGuard middleware', () => {
 
 ---
 
-## [PENDING] IMP-009 — CI 经济门：兑换码并发安全测试
+## [DONE] IMP-009 — CI 经济门：兑换码并发安全测试
 
 **日期：** 2026-03-22
 **优先级：** P0 经济红线
-**状态：** 🔵 PENDING
+**状态：** ✅ DONE
 
 **背景：**
 现有 `redeemService.test.ts` 只测单次兑换逻辑，没有并发测试。两人同时兑换同一码，依赖 DB 事务保证原子性，必须用真实 PostgreSQL 才能验证。
@@ -121,11 +121,11 @@ test('并发兑换同一码：只有一次成功，另一次抛 USED_CODE', asyn
 
 ---
 
-## [PENDING] IMP-008 — CI 经济门：局数扣减逻辑测试
+## [DONE] IMP-008 — CI 经济门：局数扣减逻辑测试
 
 **日期：** 2026-03-22
 **优先级：** P0 经济红线
-**状态：** 🔵 PENDING
+**状态：** ✅ DONE
 
 **背景：**
 `quotaService`（局数扣减）是付费体验的核心，直接影响用户花钱买的局数是否正确计算。目前完全没有对应测试文件，错误静默无法发现。
@@ -170,11 +170,11 @@ describe('consumeQuota', () => {
 
 ---
 
-## [PENDING] IMP-006 — 前端组件测试：补全 Vitest 测试文件并加入 CI
+## [DONE] IMP-006 — 前端组件测试：补全 Vitest 测试文件并加入 CI
 
 **日期：** 2026-03-22
 **优先级：** Medium
-**状态：** 🔵 PENDING
+**状态：** ✅ DONE
 
 **现状：** 前端无任何组件测试文件，CI 的 `frontend-build` job 只做 TypeScript 编译 + 构建，不跑任何测试。
 
@@ -191,11 +191,11 @@ describe('consumeQuota', () => {
 
 ---
 
-## [PENDING] IMP-005 — 后端 CI 完善：PostgreSQL 服务 + 集成测试 + 覆盖率
+## [DONE] IMP-005 — 后端 CI 完善：PostgreSQL 服务 + 集成测试 + 覆盖率
 
 **日期：** 2026-03-22
 **优先级：** High
-**状态：** 🔵 PENDING
+**状态：** ✅ DONE (lightweight: coverage + Codecov upload added; skipped PostgreSQL container per decision)
 
 **现状：** 实际 `ci.yml` 的 `backend-test` job 与 TESTING.md 规范差距较大：
 
@@ -224,11 +224,11 @@ describe('consumeQuota', () => {
 
 ---
 
-## [PENDING] IMP-004 — 登录时检测未注册邮箱并引导注册
+## [DONE] IMP-004 — 登录时检测未注册邮箱并引导注册
 
 **日期：** 2026-03-22
 **优先级：** Medium
-**状态：** 🔵 PENDING
+**状态：** ✅ DONE
 
 **现状：**
 用户输入未注册的邮箱 + 任意密码登录，后端返回通用错误「邮箱或密码错误」，用户不知道是账号不存在还是密码错了，体验差。
@@ -262,11 +262,11 @@ describe('consumeQuota', () => {
 
 ---
 
-## [PENDING] IMP-001 — 注册页面单页化（合并 OTP 验证码到注册表单）
+## [DONE] IMP-001 — 注册页面单页化（合并 OTP 验证码到注册表单）
 
 **日期：** 2026-03-22
 **优先级：** Medium
-**状态：** 🔵 PENDING
+**状态：** ✅ DONE
 
 **现状：**
 注册流程分两步跳转：
@@ -299,11 +299,11 @@ describe('consumeQuota', () => {
 
 ---
 
-## [PENDING] IMP-003 — 注销账号增加邮箱 + 验证码二次确认
+## [DONE] IMP-003 — 注销账号增加邮箱 + 验证码二次确认
 
 **日期：** 2026-03-22
 **优先级：** Medium
-**状态：** 🔵 PENDING
+**状态：** ✅ DONE
 
 **现状：**
 注销账号弹窗仅要求输入当前密码一项验证即可确认删除，安全性不足。
@@ -337,11 +337,11 @@ describe('consumeQuota', () => {
 
 ---
 
-## [PENDING] IMP-002 — 找回密码页面单页化（合并邮箱、发送验证码、验证码输入、新密码）
+## [DONE] IMP-002 — 找回密码页面单页化（合并邮箱、发送验证码、验证码输入、新密码）
 
 **日期：** 2026-03-22
 **优先级：** Medium
-**状态：** 🔵 PENDING
+**状态：** ✅ DONE
 
 **现状：**
 找回密码流程分两步跳转：

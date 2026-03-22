@@ -22,6 +22,7 @@ router.post('/password/reset', asyncHandler(ctrl.handleResetPassword))
 
 // Change password + delete account (authenticated)
 router.post('/password/change', authMiddleware, asyncHandler(ctrl.handleChangePassword))
+router.post('/account/delete-otp', authMiddleware, asyncHandler(ctrl.handleSendDeleteOtp))
 router.delete('/account', authMiddleware, asyncHandler(ctrl.handleDeleteAccount))
 
 // Profile

@@ -92,4 +92,23 @@ describe('redeemService.redeemCode', () => {
     const result = await redeemService.redeemCode(BigInt(1), 'TEST-0001')
     expect(result).toBe(10)
   })
+
+  // IMP-009: concurrent safety — sequential race simulation
+  it('IMP-009: second redeem of same code throws USED_CODE (race simulation)', async () => {
+    // First call: code is available
+    mockTx.redeemCode.findUnique.mockResolvedValueOnce(validCode)
+    mockTx.redeemCode.update.mockResolvedValueOnce({})
+    mockTx.user.update.mockResolvedValueOnce({})
+
+    const first = await redeemService.redeemCode(BigInt(1), 'TEST-0001')
+    expect(first).toBe(10)
+
+    // Second call: code now marked as used (simulates another request that won the race)
+    mockTx.redeemCode.findUnique.mockResolvedValueOnce({
+      ...validCode, usedById: BigInt(1)
+    })
+
+    await expect(redeemService.redeemCode(BigInt(2), 'TEST-0001'))
+      .rejects.toMatchObject({ code: 'USED_CODE' })
+  })
 })

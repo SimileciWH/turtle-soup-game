@@ -143,12 +143,12 @@ describe('authService', () => {
   // ── login ─────────────────────────────────────────────────
 
   describe('login', () => {
-    it('throws INVALID_CREDENTIALS when user not found', async () => {
+    it('throws EMAIL_NOT_FOUND when user not found (IMP-004)', async () => {
       mockUserPrisma.findUnique.mockResolvedValue(null)
       mockBcrypt.compare.mockResolvedValue(false as never)
 
       await expect(authService.login('unknown@example.com', 'password123'))
-        .rejects.toMatchObject({ httpStatus: 401 })
+        .rejects.toMatchObject({ code: 'EMAIL_NOT_FOUND', httpStatus: 404 })
     })
 
     it('throws INVALID_CREDENTIALS for wrong password', async () => {
