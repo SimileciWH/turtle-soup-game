@@ -2,6 +2,27 @@
 
 ---
 
+## [OPEN] BUG-013 — 返回大厅后局数 badge 不刷新
+
+**日期：** 2026-03-22
+**严重级别：** Medium
+**状态：** 🔴 OPEN
+
+**现象：**
+游客（或已登录用户）开始游戏后，点「← 大厅」返回大厅，顶部局数 badge 仍显示旧值（如 2 局），需手动刷新页面才会更新为正确值（如 1 局）。在正常操作流程中，用户会以为还有更多局数，体验有误导性。
+
+**根因：**
+大厅组件在 navigate 回来时没有重新从后端拉取最新局数，Zustand store 中的 quota 状态未在页面重新挂载/进入时刷新。
+
+**涉及文件：**
+- `frontend/src/pages/Lobby.tsx` — useEffect 缺少 quota 刷新逻辑
+- `frontend/src/store/` — Zustand quota store，navigate 回来时未 invalidate 缓存
+
+**修复步骤：**
+在 Lobby 组件的 useEffect（依赖空数组或 location）中增加 quota 刷新调用，确保每次挂载或路由进入时重新拉取最新局数。
+
+---
+
 ## [FIXED] BUG-012 — 后端部署持续失败（seed.ts 重复 answer 字段 + 跨行字符串）
 
 **日期：** 2026-03-22
