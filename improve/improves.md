@@ -2,6 +2,91 @@
 
 ---
 
+## [PENDING] IMP-010 — CI 安全门：inputGuard 中间件测试
+
+**日期：** 2026-03-22
+**优先级：** P0 安全红线
+**状态：** 🔵 PENDING
+
+**背景：**
+`inputGuard` 是阻止 prompt injection 和超长输入进入 AI 调用的唯一防线。目前无任何测试，代码改动可能静默破坏防护。
+
+**需要新建：** `backend/src/__tests__/inputGuard.test.ts`
+
+```typescript
+describe('inputGuard middleware', () => {
+  test('正常问题：通过，next() 被调用')
+  test('超过 3000 字：返回 400 INPUT_TOO_LONG')
+  test('包含注入关键词（"忽略以上所有指令"）：返回 400 BLOCKED_INPUT')
+  test('边界值 3000 字：正常通过')
+  test('边界值 3001 字：被拦截')
+})
+```
+
+**CI 要求：** 加入现有 `backend-test` job，无需 DB，纯单元测试，mock req/res/next 即可。
+
+**涉及文件：**
+- `backend/src/__tests__/inputGuard.test.ts`（新建）
+
+---
+
+## [PENDING] IMP-009 — CI 经济门：兑换码并发安全测试
+
+**日期：** 2026-03-22
+**优先级：** P0 经济红线
+**状态：** 🔵 PENDING
+
+**背景：**
+现有 `redeemService.test.ts` 只测单次兑换逻辑，没有并发测试。两人同时兑换同一码，依赖 DB 事务保证原子性，必须用真实 PostgreSQL 才能验证。
+
+**需要在 `redeemService.test.ts` 新增：**
+
+```typescript
+test('并发兑换同一码：只有一次成功，另一次抛 USED_CODE', async () => {
+  const [r1, r2] = await Promise.allSettled([
+    redeemCode(userA, code),
+    redeemCode(userB, code)
+  ])
+  const succeeded = [r1, r2].filter(r => r.status === 'fulfilled').length
+  expect(succeeded).toBe(1)
+})
+```
+
+**CI 要求：** 依赖 IMP-005（PostgreSQL 服务容器）才能运行，属于集成测试。
+
+**涉及文件：**
+- `backend/src/__tests__/redeemService.test.ts`（新增并发用例）
+
+---
+
+## [PENDING] IMP-008 — CI 经济门：局数扣减逻辑测试
+
+**日期：** 2026-03-22
+**优先级：** P0 经济红线
+**状态：** 🔵 PENDING
+
+**背景：**
+`quotaService`（局数扣减）是付费体验的核心，直接影响用户花钱买的局数是否正确计算。目前完全没有对应测试文件，错误静默无法发现。
+
+**需要新建：** `backend/src/__tests__/quotaService.test.ts`
+
+```typescript
+describe('consumeQuota', () => {
+  test('有免费局数：优先扣免费，paid 不变')
+  test('免费用完：扣付费局数')
+  test('free=0, paid=0：抛 QUOTA_EXHAUSTED')
+  test('每日重置：新的一天 quotaFree 恢复为 3 再扣 1')
+  test('同一天：不重复重置，直接扣')
+})
+```
+
+**CI 要求：** mock Prisma，纯单元测试，无需 DB，加入现有 `backend-test` job 即可立即生效。
+
+**涉及文件：**
+- `backend/src/__tests__/quotaService.test.ts`（新建）
+
+---
+
 ## [PENDING] IMP-007 — E2E 测试：补全 Playwright 测试文件并加入 CI
 
 **日期：** 2026-03-22
