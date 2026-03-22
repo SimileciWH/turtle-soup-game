@@ -9,3 +9,10 @@ export function listPuzzles(difficulty: string, page = 1, limit = 100) {
 export function getDailyPuzzle() {
   return api.get<Puzzle>('/puzzles/daily')
 }
+
+export function ratePuzzle(puzzleId: number, rating: number, comment?: string) {
+  return api.post<{ ok: boolean; rating: { rating: number; comment: string | null } | null }>(
+    `/puzzles/${puzzleId}/rate`,
+    { rating, comment }
+  )
+}

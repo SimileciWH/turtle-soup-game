@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { ShareCard } from '../components/result/ShareCard'
 import { getResult, getMessages } from '../api/games'
+import { ratePuzzle } from '../api/puzzles'
+import { useAuthStore } from '../store/authStore'
 import type { ResultResponse } from '../types/api'
 
 type Message = { role: string; content: string }
@@ -9,12 +11,17 @@ type Message = { role: string; content: string }
 export function Result() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
+  const { isGuest } = useAuthStore()
   const [result, setResult] = useState<ResultResponse | null>(null)
   const [messages, setMessages] = useState<Message[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
   const [showHistory, setShowHistory] = useState(false)
+  const [myRating, setMyRating] = useState(0)
+  const [ratingComment, setRatingComment] = useState('')
+  const [ratingSubmitted, setRatingSubmitted] = useState(false)
+  const [ratingLoading, setRatingLoading] = useState(false)
 
   useEffect(() => {
     if (!id) return
@@ -23,6 +30,17 @@ export function Result() {
       .catch(e => setError(e instanceof Error ? e.message : '加载失败'))
       .finally(() => setLoading(false))
   }, [id])
+
+  async function handleRate(star: number) {
+    if (!result || ratingLoading) return
+    setMyRating(star)
+    setRatingLoading(true)
+    try {
+      await ratePuzzle(result.puzzle_id, star, ratingComment || undefined)
+      setRatingSubmitted(true)
+    } catch { /* ignore */ }
+    finally { setRatingLoading(false) }
+  }
 
   async function handleShare() {
     if (!result) return
@@ -104,6 +122,18 @@ export function Result() {
           durationSec={result.duration_sec}
         />
 
+        {/* Rating */}
+        <RatingBlock
+          isGuest={isGuest}
+          myRating={myRating}
+          comment={ratingComment}
+          setComment={setRatingComment}
+          submitted={ratingSubmitted}
+          loading={ratingLoading}
+          onRate={handleRate}
+          onNavigate={() => navigate('/auth')}
+        />
+
         {/* Action buttons */}
         <div className="flex gap-3">
           <button
@@ -181,4 +211,70 @@ function formatDuration(sec: number): string {
   const m = Math.floor(sec / 60)
   const s = sec % 60
   return m > 0 ? `${m}分${s}秒` : `${s}秒`
+}
+
+function RatingBlock({
+  isGuest, myRating, comment, setComment, submitted, loading, onRate, onNavigate
+}: {
+  isGuest: boolean
+  myRating: number
+  comment: string
+  setComment: (v: string) => void
+  submitted: boolean
+  loading: boolean
+  onRate: (star: number) => void
+  onNavigate: () => void
+}) {
+  if (isGuest) {
+    return (
+      <div className="bg-white/60 rounded-2xl border border-sand/40 p-4 text-center">
+        <p className="text-sm text-warm-mid mb-2">注册账号后可评价谜题，游戏数据也不会丢失 🐢</p>
+        <button
+          onClick={onNavigate}
+          className="px-4 py-1.5 bg-ocean text-white rounded-lg text-sm hover:bg-ocean/80 transition-colors"
+        >
+          去注册
+        </button>
+      </div>
+    )
+  }
+
+  if (submitted) {
+    return (
+      <div className="bg-white/60 rounded-2xl border border-sand/40 p-4 text-center text-sm text-leaf">
+        ✅ 感谢你的评价！
+      </div>
+    )
+  }
+
+  return (
+    <div className="bg-white/60 rounded-2xl border border-sand/40 p-4">
+      <h3 className="font-bold text-warm-brown text-sm mb-3">给这道谜题评个分</h3>
+      <div className="flex gap-2 justify-center mb-3">
+        {[1, 2, 3, 4, 5].map(star => (
+          <button
+            key={star}
+            onClick={() => onRate(star)}
+            disabled={loading}
+            className={`text-2xl transition-transform hover:scale-110 disabled:opacity-50 ${
+              star <= myRating ? 'opacity-100' : 'opacity-30'
+            }`}
+          >
+            ⭐
+          </button>
+        ))}
+      </div>
+      {myRating > 0 && !submitted && (
+        <textarea
+          value={comment}
+          onChange={e => setComment(e.target.value)}
+          placeholder="留下简短评价（可选）"
+          maxLength={200}
+          rows={2}
+          className="w-full px-3 py-2 rounded-xl border border-sand/60 bg-warm-white text-sm
+                     focus:outline-none focus:border-ocean resize-none"
+        />
+      )}
+    </div>
+  )
 }

@@ -24,6 +24,7 @@ model User {
 
   sessions       GameSession[]
   redeemCodes    RedeemCode[]   @relation("UsedBy")
+  puzzleRatings  PuzzleRating[]
 
   @@map("users")
 }
@@ -45,9 +46,29 @@ model Puzzle {
   playCount   Int           @default(0) @map("play_count")
   createdAt   DateTime      @default(now()) @map("created_at")
 
+  avgRating   Float?        @default(0) @map("avg_rating")
+  ratingCount Int           @default(0) @map("rating_count")
+
   sessions    GameSession[]
+  ratings     PuzzleRating[]
 
   @@map("puzzles")
+}
+
+model PuzzleRating {
+  id        Int      @id @default(autoincrement())
+  puzzleId  Int      @map("puzzle_id")
+  userId    BigInt   @map("user_id")
+  rating    Int
+  comment   String?  @db.VarChar(200)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  puzzle    Puzzle   @relation(fields: [puzzleId], references: [id])
+  user      User     @relation(fields: [userId], references: [id])
+
+  @@unique([puzzleId, userId])
+  @@map("puzzle_ratings")
 }
 
 model GameSession {

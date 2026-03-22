@@ -6,7 +6,7 @@ import type { Difficulty } from '@prisma/client'
 const SAFE_SELECT = {
   id: true, title: true, summary: true, surface: true,
   difficulty: true, tags: true, isDaily: true,
-  playCount: true, createdAt: true
+  playCount: true, avgRating: true, ratingCount: true, createdAt: true
 } as const
 
 // 内部完整字段（仅游戏引擎使用）
@@ -18,7 +18,7 @@ const FULL_SELECT = {
 export type SafePuzzle = {
   id: number; title: string; summary: string; surface: string
   difficulty: Difficulty; tags: unknown; isDaily: boolean
-  playCount: number; createdAt: Date
+  playCount: number; avgRating: number | null; ratingCount: number; createdAt: Date
 }
 
 export type FullPuzzle = SafePuzzle & {
@@ -47,8 +47,16 @@ export async function listPuzzles(
 }
 
 export async function getDailyPuzzle(): Promise<SafePuzzle | null> {
-  return prisma.puzzle.findFirst({
-    where: { isDaily: true, status: 'ACTIVE' },
+  const ids = await prisma.puzzle.findMany({
+    where: { status: 'ACTIVE' },
+    select: { id: true },
+    orderBy: { id: 'asc' }
+  })
+  if (ids.length === 0) return null
+  const dayNumber = Math.floor(Date.now() / 86_400_000)
+  const picked = ids[dayNumber % ids.length]
+  return prisma.puzzle.findUnique({
+    where: { id: picked.id },
     select: SAFE_SELECT
   })
 }
@@ -82,6 +90,42 @@ export async function getFullPuzzle(id: number): Promise<FullPuzzle> {
   })
   if (!puzzle) throw Errors.NOT_FOUND('题目不存在')
   return puzzle
+}
+
+export async function ratePuzzle(
+  puzzleId: number, userId: bigint, rating: number, comment?: string
+): Promise<void> {
+  if (rating < 1 || rating > 5) throw new Error('评分须在 1–5 之间')
+
+  await prisma.$transaction(async tx => {
+    await tx.puzzleRating.upsert({
+      where: { puzzleId_userId: { puzzleId, userId } },
+      create: { puzzleId, userId, rating, comment },
+      update: { rating, comment }
+    })
+    const agg = await tx.puzzleRating.aggregate({
+      where: { puzzleId },
+      _avg: { rating: true },
+      _count: { rating: true }
+    })
+    await tx.puzzle.update({
+      where: { id: puzzleId },
+      data: {
+        avgRating: agg._avg.rating ?? 0,
+        ratingCount: agg._count.rating
+      }
+    })
+  })
+}
+
+export async function getMyRating(
+  puzzleId: number, userId: bigint
+): Promise<{ rating: number; comment: string | null } | null> {
+  const r = await prisma.puzzleRating.findUnique({
+    where: { puzzleId_userId: { puzzleId, userId } },
+    select: { rating: true, comment: true }
+  })
+  return r
 }
 
 // ── Helpers ─────────────────────────────────────────────

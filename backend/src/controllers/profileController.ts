@@ -8,6 +8,19 @@ export async function handleProfile(req: Request, res: Response): Promise<void> 
   res.json(profile)
 }
 
+export async function handleSessionMessages(req: Request, res: Response): Promise<void> {
+  const user = await quotaService.resolveUser(req.user!)
+  const sessionId = BigInt(String(req.params['id'] ?? '0'))
+  const messages = await profileService.getSessionMessages(sessionId, user.id)
+  res.json({ messages })
+}
+
+export async function handleStats(req: Request, res: Response): Promise<void> {
+  const user = await quotaService.resolveUser(req.user!)
+  const stats = await profileService.getStats(user.id)
+  res.json(stats)
+}
+
 export async function handleHistory(req: Request, res: Response): Promise<void> {
   const user = await quotaService.resolveUser(req.user!)
   const page = Math.max(1, parseInt(String(req.query['page'] ?? '1'), 10))

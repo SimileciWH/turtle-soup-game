@@ -2,8 +2,8 @@ import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../store/authStore'
 import { getProfile, redeemCode, changePassword, deleteAccount, sendDeleteOtp } from '../api/auth'
-import { getHistory } from '../api/profile'
-import type { HistoryResponse } from '../types/api'
+import { getHistory, getStats, getSessionMessages } from '../api/profile'
+import type { HistoryResponse, HistorySession, StatsResponse, SessionMessage } from '../types/api'
 
 const DIFFICULTY_LABEL: Record<string, string> = {
   EASY: '简单', MEDIUM: '中等', HARD: '困难'
@@ -49,6 +49,7 @@ export function Profile() {
   const navigate = useNavigate()
   const { isGuest, quotaFree, quotaPaid, setQuota, logout } = useAuthStore()
 
+  const [stats, setStats] = useState<StatsResponse | null>(null)
   const [history, setHistory] = useState<HistoryResponse | null>(null)
   const [redeemInput, setRedeemInput] = useState('')
   const [redeemMsg, setRedeemMsg] = useState<{ ok: boolean; text: string } | null>(null)
@@ -64,9 +65,10 @@ export function Profile() {
 
   async function loadData() {
     try {
-      const [profile, hist] = await Promise.all([getProfile(), getHistory()])
+      const [profile, hist, st] = await Promise.all([getProfile(), getHistory(), getStats()])
       setQuota(profile.quota_free, profile.quota_paid)
       setHistory(hist)
+      setStats(st)
     } catch { /* ignore */ }
   }
 
@@ -143,6 +145,7 @@ export function Profile() {
 
       <main className="max-w-lg mx-auto px-4 py-6 flex flex-col gap-5">
         <QuotaCard quotaFree={quotaFree} quotaPaid={quotaPaid} />
+        <StatsCard stats={stats} />
         <RedeemCard
           input={redeemInput} setInput={setRedeemInput}
           msg={redeemMsg} loading={redeemLoading}
@@ -165,6 +168,44 @@ export function Profile() {
 }
 
 // ── Sub-components ────────────────────────────────────────
+
+const DIFF_LABEL: Record<string, string> = { EASY: '入门', MEDIUM: '进阶', HARD: '烧脑' }
+
+function formatTime(sec: number): string {
+  const h = Math.floor(sec / 3600)
+  const m = Math.floor((sec % 3600) / 60)
+  if (h > 0) return `${h}h ${m}m`
+  if (m > 0) return `${m} 分钟`
+  return `${sec} 秒`
+}
+
+function StatsCard({ stats }: { stats: StatsResponse | null }) {
+  if (!stats) return null
+  if (stats.total_games === 0) return null
+
+  const items = [
+    { label: '总对局', value: `${stats.total_games} 局` },
+    { label: '通关率', value: `${stats.win_rate}%` },
+    { label: '平均提问', value: `${stats.avg_questions} 次` },
+    { label: '累计游戏', value: formatTime(stats.total_play_time_sec) },
+    { label: '常玩难度', value: stats.favorite_difficulty ? DIFF_LABEL[stats.favorite_difficulty] : '—' },
+    { label: '提示使用', value: `${stats.total_hints} 次` },
+  ]
+
+  return (
+    <div className="bg-white/70 rounded-2xl border border-sand/40 p-5">
+      <h2 className="font-bold text-warm-brown mb-3">我的战绩</h2>
+      <div className="grid grid-cols-3 gap-3">
+        {items.map(({ label, value }) => (
+          <div key={label} className="bg-warm-white rounded-xl p-3 text-center">
+            <div className="text-lg font-bold text-ocean">{value}</div>
+            <div className="text-xs text-warm-mid mt-0.5">{label}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
 
 function QuotaCard({ quotaFree, quotaPaid }: { quotaFree: number; quotaPaid: number }) {
   return (
@@ -234,23 +275,73 @@ function HistoryCard({ history }: { history: HistoryResponse | null }) {
       ) : (
         <div className="flex flex-col gap-2">
           {history.sessions.map(s => (
-            <div key={s.id}
-              className="flex items-center justify-between py-2 border-b border-sand/30 last:border-0"
-            >
-              <div className="flex-1 min-w-0">
-                <div className="text-sm font-medium text-warm-brown truncate">{s.puzzle_title}</div>
-                <div className="flex items-center gap-2 mt-0.5">
-                  <span className="text-xs text-warm-mid">{DIFFICULTY_LABEL[s.difficulty]}</span>
-                  <span className="text-xs text-warm-mid">{s.question_count} 问</span>
-                </div>
-              </div>
-              <span className={`text-xs px-2 py-0.5 rounded-full ml-2 shrink-0 ${
-                s.status === 'WON' ? 'bg-leaf/20 text-leaf' : 'bg-warm-mid/10 text-warm-mid'
-              }`}>
-                {s.status === 'WON' ? '成功' : '放弃'}
-              </span>
-            </div>
+            <HistoryRow key={s.session_id} session={s} />
           ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function HistoryRow({ session: s }: { session: HistorySession }) {
+  const [open, setOpen] = useState(false)
+  const [msgs, setMsgs] = useState<SessionMessage[] | null>(null)
+  const [loadingMsgs, setLoadingMsgs] = useState(false)
+
+  async function toggleChat() {
+    if (!open && msgs === null) {
+      setLoadingMsgs(true)
+      try {
+        const res = await getSessionMessages(s.session_id)
+        setMsgs(res.messages)
+      } catch { setMsgs([]) }
+      finally { setLoadingMsgs(false) }
+    }
+    setOpen(v => !v)
+  }
+
+  return (
+    <div className="border-b border-sand/30 last:border-0 pb-2">
+      <div className="flex items-center justify-between py-2">
+        <div className="flex-1 min-w-0">
+          <div className="text-sm font-medium text-warm-brown truncate">{s.puzzle_title}</div>
+          <div className="flex items-center gap-2 mt-0.5">
+            <span className="text-xs text-warm-mid">{DIFFICULTY_LABEL[s.puzzle_difficulty]}</span>
+            <span className="text-xs text-warm-mid">{s.question_count} 问</span>
+          </div>
+        </div>
+        <div className="flex items-center gap-2 shrink-0 ml-2">
+          <span className={`text-xs px-2 py-0.5 rounded-full ${
+            s.status === 'WON' ? 'bg-leaf/20 text-leaf' : 'bg-warm-mid/10 text-warm-mid'
+          }`}>
+            {s.status === 'WON' ? '成功' : '放弃'}
+          </span>
+          <button
+            onClick={toggleChat}
+            className="text-xs text-ocean hover:underline"
+          >
+            {open ? '收起' : '对话'}
+          </button>
+        </div>
+      </div>
+      {open && (
+        <div className="mt-1 flex flex-col gap-1.5 max-h-64 overflow-y-auto px-1">
+          {loadingMsgs ? (
+            <div className="text-xs text-warm-mid text-center py-2">加载中…</div>
+          ) : msgs && msgs.length > 0 ? msgs.map((m, i) => (
+            <div
+              key={i}
+              className={`text-xs rounded-xl px-3 py-1.5 leading-relaxed ${
+                m.role === 'user'
+                  ? 'bg-sky/20 text-ocean self-end max-w-[85%] text-right'
+                  : 'bg-sand/20 text-warm-brown self-start max-w-[85%]'
+              }`}
+            >
+              {m.content}
+            </div>
+          )) : (
+            <div className="text-xs text-warm-mid text-center py-2">暂无对话记录</div>
+          )}
         </div>
       )}
     </div>

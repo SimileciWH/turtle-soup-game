@@ -11,6 +11,8 @@ export interface Puzzle {
   tags: unknown
   isDaily: boolean
   playCount: number
+  avgRating: number | null
+  ratingCount: number
   createdAt: string
 }
 
@@ -61,18 +63,33 @@ export interface ProfileResponse {
   quota_paid: number
 }
 
+export interface HistorySession {
+  session_id: string
+  puzzle_title: string
+  puzzle_difficulty: Difficulty
+  status: 'WON' | 'GIVEN_UP' | 'ACTIVE'
+  question_count: number
+  hint_used: number
+  duration_sec: number | null
+  started_at: string
+  ended_at: string | null
+}
+
 export interface HistoryResponse {
-  sessions: Array<{
-    id: string
-    puzzle_title: string
-    difficulty: Difficulty
-    status: 'WON' | 'GIVEN_UP'
-    question_count: number
-    ended_at: string
-  }>
+  sessions: HistorySession[]
   total: number
   page: number
   limit: number
+}
+
+export interface StatsResponse {
+  total_games: number
+  won_games: number
+  win_rate: number
+  avg_questions: number
+  total_hints: number
+  total_play_time_sec: number
+  favorite_difficulty: 'EASY' | 'MEDIUM' | 'HARD' | null
 }
 
 export interface RedeemResponse {
@@ -85,4 +102,10 @@ export interface GuestResponse {
   guest_token: string
   quota_free: number
   quota_paid: number
+}
+
+export interface SessionMessage {
+  role: 'user' | 'assistant'
+  content: string
+  seq: number
 }

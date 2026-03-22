@@ -23,7 +23,7 @@ export async function* askStream(opts: AskOptions): AsyncGenerator<string> {
   const systemPrompt = buildSystemPrompt(opts.surface, opts.answer, opts.facts)
   const messages = [
     { role: 'system' as const, content: systemPrompt },
-    ...opts.history,
+    ...compressHistory(opts.history),
     { role: 'user' as const, content: opts.question }
   ]
 
@@ -66,6 +66,14 @@ const ALLOWED_REPLIES = ['是的。', '不是。', '与此无关。', '能换个
 export function sanitizeAIResponse(raw: string): string {
   const trimmed = raw.trim()
   return ALLOWED_REPLIES.find(r => trimmed.includes(r)) ? trimmed : trimmed || '与此无关。'
+}
+
+// Keep only last 40 user/assistant turns to control token cost
+const MAX_HISTORY_TURNS = 40
+
+function compressHistory(history: Message[]): Message[] {
+  if (history.length <= MAX_HISTORY_TURNS * 2) return history
+  return history.slice(-MAX_HISTORY_TURNS * 2)
 }
 
 function buildSystemPrompt(surface: string, answer: string, facts: unknown): string {
