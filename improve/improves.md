@@ -2,6 +2,36 @@
 
 ---
 
+## [PENDING] IMP-011 — 游戏记录折叠聊天内容
+
+**日期：** 2026-03-22
+**优先级：** Medium
+**状态：** 🔵 PENDING
+
+**现状：**
+个人中心游戏记录只显示简单信息（玩了哪一局、对话了多少条），无法查看当时的具体对话内容，用户无法回顾自己的推理过程。
+
+**优化方案：**
+每条游戏记录下方增加可折叠区域，点击展开后显示当时的完整聊天交流内容（用户问题 + AI 回答 按时序排列）：
+
+```
+▶ 2026-03-22  自焚的无罪者  共12轮对话  [展开对话]
+  ├ 你：这个人是自愿死的吗？
+  ├ AI：是
+  ├ 你：他是为了证明自己清白吗？
+  ├ AI：是
+  └ ...
+```
+
+**后端影响：** 需新增接口 `GET /api/v1/profile/games/:id/messages` 返回指定对局完整对话记录（严格过滤 answer/facts/hints 字段，不得泄漏答案）
+
+**涉及文件：**
+- `frontend/src/pages/Profile.tsx` — 游戏记录列表增加折叠组件
+- `backend/src/routes/profile.ts` — 新增 GET /games/:id/messages 路由
+- `backend/src/controllers/profileController.ts` — 对话记录查询逻辑
+
+---
+
 ## [PENDING] IMP-010 — CI 安全门：inputGuard 中间件测试
 
 **日期：** 2026-03-22
