@@ -2,49 +2,41 @@
 
 ---
 
-## [OPEN] BUG-014 — 游客局数未合并到注册账户
+## [FIXED] BUG-014 — 游客局数未合并到注册账户
 
 **日期：** 2026-03-22
 **严重级别：** High
-**状态：** 🔴 OPEN
+**状态：** ✅ FIXED（2026-03-22）
 
 **现象：**
-游客消耗 2 局（quotaFree: 3→1）后点「登录/注册」完成注册，个人中心显示「免费局数 3 / 付费局数 0」，没有继承游客剩余的 1 局，应显示「免费局数 1 / 付费局数 0」。用户的游戏进度（已用局数）在注册时被静默丢弃，形成虚假的局数增加感。
+游客消耗 2 局（quotaFree: 3→1）后点「登录/注册」完成注册，个人中心显示「免费局数 3 / 付费局数 0」，没有继承游客剩余的 1 局，应显示「免费局数 1 / 付费局数 0」。
 
 **根因：**
-两个可能根因（需代码确认）：
-1. `mergeGuestQuota` 在复制 `quotaFree/quotaPaid` 时未同步复制 `quotaResetAt`，导致新注册用户的 `quotaResetAt` 为 null 或旧日期 → `getQuota()` 中 `resetDate !== today` → 返回默认值 3 而非实际值 1
-2. 或 `verifyRegistration` 流程中 guest token 在合并前已被清除，导致 `mergeGuestQuota` 找不到对应 guest 用户而跳过合并
+`mergeGuestQuota` 只 increment `quotaPaid`，未复制 `quotaFree` 和 `quotaResetAt`。新注册用户 `quotaResetAt` 为 null → `getQuota()` 中 `resetDate !== today` → 返回默认值 3 而非实际值 1。
 
-**涉及文件：**
-- `backend/src/services/authService.ts` — `verifyRegistration()` → `mergeGuestQuota()` 调用链
-- `backend/src/services/quotaService.ts` — `getQuota()` 的 `resetDate` 判断逻辑
-
-**修复步骤：**
-1. 确认 `mergeGuestQuota` 是否复制了 `quotaResetAt` 字段（若无，补上）
-2. 确认 `verifyRegistration` 中 guest token 传递是否完整（前端注册时需携带 `hgt_guest_token`）
-3. 加 `quotaResetAt` 字段的单元测试覆盖
+**修复：** `authService.ts` 的 `mergeGuestQuota` 中补充 `quotaFree: guest.quotaFree` 和 `quotaResetAt: guest.quotaResetAt`。
+**CI 测试：** `backend/src/__tests__/authService.test.ts` 中新增 BUG-014 回归测试。
 
 ---
 
-## [OPEN] BUG-013 — 返回大厅后局数 badge 不刷新
+## [FIXED] BUG-013 — 返回大厅后局数 badge 不刷新
 
 **日期：** 2026-03-22
 **严重级别：** Medium
-**状态：** 🔴 OPEN
+**状态：** ✅ FIXED（2026-03-22）
 
 **现象：**
-游客（或已登录用户）开始游戏后，点「← 大厅」返回大厅，顶部局数 badge 仍显示旧值（如 2 局），需手动刷新页面才会更新为正确值（如 1 局）。在正常操作流程中，用户会以为还有更多局数，体验有误导性。
+游客（或已登录用户）开始游戏后，点「← 大厅」返回大厅，顶部局数 badge 仍显示旧值（如 2 局），需手动刷新页面才会更新为正确值（如 1 局）。
 
 **根因：**
-大厅组件在 navigate 回来时没有重新从后端拉取最新局数，Zustand store 中的 quota 状态未在页面重新挂载/进入时刷新。
+`Lobby.tsx` 的 `useEffect([], [])` 只在组件挂载时执行，SPA 路由导航回大厅不重新挂载组件 → effect 不重新触发 → 配额不刷新。同时 `initGuest` 在已有 guest token 时只调用 `setToken` 而不从后端拉取最新配额。
+
+**修复：**
+1. 引入 `useLocation`，将 `useEffect` 依赖改为 `[location.key]`，每次 SPA 导航到大厅都触发 profile 刷新
+2. `initGuest` 中已有 guest token 时，额外调用 `fetchProfile()` 获取最新配额
 
 **涉及文件：**
-- `frontend/src/pages/Lobby.tsx` — useEffect 缺少 quota 刷新逻辑
-- `frontend/src/store/` — Zustand quota store，navigate 回来时未 invalidate 缓存
-
-**修复步骤：**
-在 Lobby 组件的 useEffect（依赖空数组或 location）中增加 quota 刷新调用，确保每次挂载或路由进入时重新拉取最新局数。
+- `frontend/src/pages/Lobby.tsx`
 
 ---
 

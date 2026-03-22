@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { Header } from '../components/layout/Header'
 import { DifficultyFilter } from '../components/lobby/DifficultyFilter'
 import { PuzzleCard } from '../components/lobby/PuzzleCard'
@@ -12,6 +12,7 @@ import type { Puzzle } from '../types/api'
 
 export function Lobby() {
   const navigate = useNavigate()
+  const location = useLocation()
   const { token, isGuest, setToken, setQuota } = useAuthStore()
   const { startGame: storeStartGame } = useGameStore()
 
@@ -23,7 +24,7 @@ export function Lobby() {
   const [error, setError] = useState<string | null>(null)
   const [dailyPuzzle, setDailyPuzzle] = useState<Puzzle | null>(null)
 
-  // Initialize guest session on first visit
+  // Refresh quota on every navigation to lobby (fixes BUG-013: SPA navigation doesn't remount)
   useEffect(() => {
     if (!token) {
       initGuest()
@@ -31,7 +32,7 @@ export function Lobby() {
       fetchProfile()
     }
     fetchDaily()
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [location.key]) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     fetchPuzzles()
@@ -40,8 +41,9 @@ export function Lobby() {
   async function initGuest() {
     const existing = localStorage.getItem('hgt_guest_token')
     if (existing) {
-      // Already have a guest token, just refresh quota from profile
+      // Already have a guest token — set in store then fetch fresh quota (fixes BUG-013)
       setToken(existing, true)
+      await fetchProfile()
       return
     }
     try {

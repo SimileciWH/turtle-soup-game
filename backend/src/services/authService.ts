@@ -228,7 +228,11 @@ async function mergeGuestQuota(userId: bigint, guestToken: string): Promise<void
     }),
     prisma.user.update({
       where: { id: userId },
-      data: { quotaPaid: { increment: guest.quotaPaid } }
+      data: {
+        quotaFree: guest.quotaFree,
+        quotaResetAt: guest.quotaResetAt,
+        quotaPaid: { increment: guest.quotaPaid }
+      }
     }),
     prisma.user.delete({ where: { id: guest.id } })
   ])

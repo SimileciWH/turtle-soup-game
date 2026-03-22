@@ -30,6 +30,7 @@ router.get('/me', authMiddleware, asyncHandler(ctrl.handleMe))
 // 开发环境专用
 if (process.env['NODE_ENV'] === 'development') {
   router.post('/dev-login', asyncHandler(ctrl.handleDevLogin))
+  router.post('/dev-register-verify', asyncHandler(ctrl.handleDevRegisterVerify))
 }
 
 export default router

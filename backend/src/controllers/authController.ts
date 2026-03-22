@@ -120,6 +120,18 @@ export async function handleMe(req: Request, res: Response): Promise<void> {
   res.json(formatUser(user, false))
 }
 
+// 开发环境专用：跳过 OTP 直接完成注册验证（仅用于测试）
+export async function handleDevRegisterVerify(req: Request, res: Response): Promise<void> {
+  const { email, guest_token } = req.body as { email?: string; guest_token?: string }
+  if (!email) throw Errors.INVALID_INPUT('缺少 email')
+
+  const { saveOtp } = await import('../utils/otpStore')
+  const testCode = 'dev999'
+  saveOtp(`register:${email.toLowerCase()}`, testCode)
+  const { token } = await authService.verifyRegistration(email, testCode, guest_token)
+  res.json({ token })
+}
+
 // 开发环境专用
 export async function handleDevLogin(req: Request, res: Response): Promise<void> {
   const { email } = req.body as { email?: string }

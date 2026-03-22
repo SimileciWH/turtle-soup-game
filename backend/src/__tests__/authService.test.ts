@@ -311,5 +311,43 @@ describe('authService', () => {
         expect.objectContaining({ where: { userId: guestUser.id } })
       )
     })
+
+    // BUG-014 regression: mergeGuestQuota must copy ALL three quota fields
+    it('BUG-014: copies quotaFree AND quotaResetAt (not just quotaPaid) from guest on merge', async () => {
+      const today = new Date()
+      const guestWithUsedQuota = {
+        ...guestUser,
+        id: BigInt(99),
+        guestToken: 'g_bug014',
+        quotaFree: 1,
+        quotaPaid: 5,
+        quotaResetAt: today
+      }
+      const registeredUser = { ...baseUser, id: BigInt(50), email: 'bug014@example.com', guestToken: null }
+
+      saveOtp('register:bug014@example.com', '777777')
+      mockUserPrisma.findUnique
+        .mockResolvedValueOnce(registeredUser as never)      // email lookup
+        .mockResolvedValueOnce(guestWithUsedQuota as never)  // guestToken lookup in mergeGuestQuota
+
+      mockUserPrisma.update.mockResolvedValue(registeredUser as never)
+      mockPrisma.$transaction.mockResolvedValue([])
+
+      await authService.verifyRegistration('bug014@example.com', '777777', 'g_bug014')
+
+      // The second update call is mergeGuestQuota's user.update (first is emailVerified=true)
+      const calls = mockUserPrisma.update.mock.calls
+      const mergeCall = calls.find(c =>
+        (c[0] as { data: Record<string, unknown> }).data?.quotaFree !== undefined
+      )
+      expect(mergeCall).toBeDefined()
+      expect(mergeCall![0]).toMatchObject({
+        data: {
+          quotaFree: 1,
+          quotaResetAt: today,
+          quotaPaid: { increment: 5 }
+        }
+      })
+    })
   })
 })
