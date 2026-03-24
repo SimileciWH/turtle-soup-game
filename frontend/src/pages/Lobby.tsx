@@ -93,7 +93,10 @@ export function Lobby() {
     setStartingId(puzzleId)
     try {
       const res = await startGame(puzzleId)
-      const puzzle = puzzles.find(p => p.id === puzzleId)!
+      // daily puzzle may not be in the filtered list — fallback to dailyPuzzle state
+      const puzzle = puzzles.find(p => p.id === puzzleId) ??
+        (dailyPuzzle?.id === puzzleId ? dailyPuzzle : null)
+      if (!puzzle) { setError('启动游戏失败：谜题数据不存在'); return }
       storeStartGame(Number(res.session_id), {
         id: res.puzzle_id,
         title: puzzle.title,
