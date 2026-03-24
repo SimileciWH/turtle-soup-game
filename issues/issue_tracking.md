@@ -2,6 +2,31 @@
 
 ---
 
+## [FIXED] BUG-016 — 每日推荐"开始挑战"在难度筛选下崩溃
+
+**日期：** 2026-03-24
+**严重级别：** Medium
+**状态：** ✅ FIXED（2026-03-24，commit 5a40d8c）
+
+**现象：**
+当用户将大厅谜题列表切换到非"全部"难度筛选时（如"困难"），点击每日推荐的"开始挑战"按钮会触发 `TypeError: Cannot read properties of undefined (reading 'title')`，游戏无法启动，显示错误信息。
+
+**根因：**
+`Lobby.tsx` `handleStart()` 使用 `puzzles.find(p => p.id === puzzleId)!` 非空断言。当每日推荐谜题（如"简单"难度）不在当前难度筛选的 `puzzles[]` 列表里时，`find()` 返回 `undefined`，访问 `.title` 抛出 TypeError。
+
+**涉及文件：**
+- `frontend/src/pages/Lobby.tsx` — `handleStart()` 非空断言改为带 `dailyPuzzle` fallback 的安全查找
+
+**修复步骤：**
+将 `puzzles.find(p => p.id === puzzleId)!` 改为：
+```typescript
+const puzzle = puzzles.find(p => p.id === puzzleId) ??
+  (dailyPuzzle?.id === puzzleId ? dailyPuzzle : null)
+if (!puzzle) { setError('启动游戏失败：谜题数据不存在'); return }
+```
+
+---
+
 ## [FIXED] BUG-015 — 每日推荐卡片不显示谜题标题和摘要
 
 **日期：** 2026-03-22
