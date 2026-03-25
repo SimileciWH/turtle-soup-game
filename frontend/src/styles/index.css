@@ -7,8 +7,6 @@
     font-family: 'Noto Sans SC', sans-serif;
     background-color: #FDF6E3;
     color: #3D2B1A;
-    /* BUG-009: prevent horizontal overflow on mobile */
-    overflow-x: hidden;
   }
 
   body {
