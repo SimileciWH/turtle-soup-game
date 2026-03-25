@@ -2,6 +2,26 @@
 
 ---
 
+## [FIXED] BUG-017 — 移动端页面无法纵向滚动
+
+**日期：** 2026-03-25
+**严重级别：** High
+**状态：** ✅ FIXED（2026-03-25，commit 59fcf44）
+
+**现象：**
+在移动端（iOS Safari / 部分 Android 浏览器）页面无法向下滚动，滚动操作无效，始终停留在顶部。
+
+**根因：**
+`frontend/src/styles/index.css` 中 `html` 元素设置了 `overflow-x: hidden`。iOS Safari 将此解读为 `html` 是独立的 scroll container，导致 `overflow-y: auto` 失效，纵向滚动被锁死。`body` 上已有 `overflow-x: hidden` 可以防止横向溢出，`html` 上的规则是多余的。
+
+**涉及文件：**
+- `frontend/src/styles/index.css` — 删除 `html { overflow-x: hidden }` 规则
+
+**修复步骤：**
+从 `html` 选择器移除 `overflow-x: hidden`，保留 `body` 上的同名规则。
+
+---
+
 ## [FIXED] BUG-016 — 每日推荐"开始挑战"在难度筛选下崩溃
 
 **日期：** 2026-03-24
